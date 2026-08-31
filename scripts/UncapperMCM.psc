@@ -83,6 +83,20 @@ Bool Function RemoveAttributeBreakpoint(Int tableIndex, Int index) Global Native
 
 
 ; ---------------------------------------------------------------------------
+; Legendary Settings
+; ---------------------------------------------------------------------------
+
+Bool Function GetIniUseLegendarySettings() Global Native
+
+Bool Function GetLegendaryKeepSkillLevel() Global Native
+Bool Function GetLegendaryHideButton() Global Native
+
+Int Function GetLegendarySkillLevel() Global Native
+Int Function GetLegendarySkillLevelAfter() Global Native
+
+Bool Function SetLegendarySettings(Bool keepSkillLevel, Bool hideButton, Int skillLevel, Int skillLevelAfter) Global Native
+
+; ---------------------------------------------------------------------------
 ; General
 ; ---------------------------------------------------------------------------
 

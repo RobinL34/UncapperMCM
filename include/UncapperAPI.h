@@ -292,4 +292,26 @@ namespace UncapperAPI
     );
 
     std::uint32_t GetIniUseAttributesAtLevelUp();
+
+
+    // ---------------------------------------------------------------------
+    // Legendary settings
+    // ---------------------------------------------------------------------
+
+    std::uint32_t GetIniUseLegendarySettings();
+
+    std::uint32_t GetIniLegendaryKeepSkillLevel();
+
+    std::uint32_t GetIniHideLegendaryButton();
+
+    std::uint32_t GetIniSkillLevelEnableLegendary();
+
+    std::uint32_t GetIniSkillLevelAfterLegendary();
+
+    bool SetLegendaryOverrides(
+        bool keepSkillLevel,
+        bool hideButton,
+        std::uint32_t skillLevelEnable,
+        std::uint32_t skillLevelAfter
+    );
 }

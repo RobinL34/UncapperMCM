@@ -14,9 +14,10 @@ namespace
     constexpr std::uint32_t RECORD_VERSION_V4 = 4;
     constexpr std::uint32_t RECORD_VERSION_V5 = 5;
     constexpr std::uint32_t RECORD_VERSION_V6 = 6;
+    constexpr std::uint32_t RECORD_VERSION_V7 = 7;
 
     constexpr std::uint32_t CURRENT_RECORD_VERSION =
-        RECORD_VERSION_V6;
+        RECORD_VERSION_V7;
 
     // -------------------------------------------------------------------------
     // Version 1
@@ -887,7 +888,7 @@ namespace
     }
 
     // -------------------------------------------------------------------------
-    // Save V6
+    // Save V7
     // -------------------------------------------------------------------------
 
     void SaveCallback(
@@ -1099,6 +1100,39 @@ namespace
             }
         }
 
+        // -------------------------------------------------------------
+        // Legendary settings
+        // -------------------------------------------------------------
+
+        {
+            const std::uint32_t keepSkillLevel =
+                settings.legendary.keepSkillLevel
+                    ? 1u
+                    : 0u;
+
+            const std::uint32_t hideButton =
+                settings.legendary.hideLegendaryButton
+                    ? 1u
+                    : 0u;
+
+            if (
+                !WriteValue(
+                    serialization,
+                    keepSkillLevel) ||
+                !WriteValue(
+                    serialization,
+                    hideButton) ||
+                !WriteValue(
+                    serialization,
+                    settings.legendary.skillLevelEnable) ||
+                !WriteValue(
+                    serialization,
+                    settings.legendary.skillLevelAfter))
+            {
+                goto save_failed;
+            }
+        }
+
         SKSE::log::info(
             "UncapperMCM settings saved "
             "(serialization version {}).",
@@ -1110,7 +1144,7 @@ namespace
 
         SKSE::log::error(
             "Failed to save UncapperMCM "
-            "serialization V6 record.");
+            "serialization V7 record.");
     }
 
     // -------------------------------------------------------------------------
@@ -1163,9 +1197,10 @@ namespace
         // loaded by Settings::Reset().
         SKSE::log::info(
             "Migrating UncapperMCM serialization "
-            "V1 -> V6. Enchanting, Skill XP, Player Level XP, "
+            "V1 -> V7. Enchanting, Skill XP, Player Level XP, "
             "PerksAtLevelUp and AttributesAtLevelUp will use "
-            "SkyrimUncapper.ini values.");
+            "SkyrimUncapper.ini values. Legendary settings will "
+            "also use the current INI baseline.");
 
         return true;
     }
@@ -1228,9 +1263,10 @@ namespace
         // Skill XP remains at the current INI baseline.
         SKSE::log::info(
             "Migrating UncapperMCM serialization "
-            "V2 -> V6. Skill XP, Player Level XP, "
+            "V2 -> V7. Skill XP, Player Level XP, "
             "PerksAtLevelUp and AttributesAtLevelUp "
-            "will use SkyrimUncapper.ini values.");
+            "will use SkyrimUncapper.ini values. Legendary settings "
+            "will also use the current INI baseline.");
 
         return true;
     }
@@ -1481,9 +1517,10 @@ namespace
 
         SKSE::log::info(
             "Migrating UncapperMCM serialization "
-            "V3 -> V6. Player Level XP, PerksAtLevelUp and "
+            "V3 -> V7. Player Level XP, PerksAtLevelUp and "
             "AttributesAtLevelUp "
-            "will use SkyrimUncapper.ini values.");
+            "will use SkyrimUncapper.ini values. Legendary settings "
+            "will also use the current INI baseline.");
 
         return true;
     }
@@ -1789,9 +1826,10 @@ namespace
 
         SKSE::log::info(
             "Migrating UncapperMCM serialization "
-            "V4 -> V6. PerksAtLevelUp and AttributesAtLevelUp "
+            "V4 -> V7. PerksAtLevelUp and AttributesAtLevelUp "
             "will use "
-            "SkyrimUncapper.ini values.");
+            "SkyrimUncapper.ini values. Legendary settings will "
+            "also use the current INI baseline.");
 
         return true;
     }
@@ -2117,8 +2155,8 @@ namespace
 
         SKSE::log::info(
             "Migrating UncapperMCM serialization "
-            "V5 -> V6. AttributesAtLevelUp will use "
-            "SkyrimUncapper.ini values.");
+            "V5 -> V7. AttributesAtLevelUp and Legendary settings "
+            "will use the current SkyrimUncapper.ini baseline.");
 
         return true;
     }
@@ -2475,6 +2513,416 @@ namespace
         settings.attributesAtLevelUp =
             std::move(attributesAtLevelUp);
 
+        SKSE::log::info(
+            "Migrating UncapperMCM serialization "
+            "V6 -> V7. Legendary settings will use the current "
+            "SkyrimUncapper.ini baseline.");
+
+        return true;
+    }
+
+    // -------------------------------------------------------------------------
+    // Load V7
+    // -------------------------------------------------------------------------
+
+    bool LoadVersion7(
+        SKSE::SerializationInterface *serialization,
+        std::uint32_t length)
+    {
+        std::uint32_t bytesReadTotal = 0;
+
+        auto &settings =
+            Settings::Get();
+
+        std::uint32_t enabled = 0;
+
+        if (
+            !ReadValue(
+                serialization,
+                enabled,
+                bytesReadTotal,
+                length))
+        {
+            return false;
+        }
+
+        if (enabled > 1)
+        {
+            return false;
+        }
+
+        std::array<
+            std::uint32_t,
+            Settings::SKILL_COUNT>
+            skillCaps{};
+
+        std::array<
+            std::uint32_t,
+            Settings::SKILL_COUNT>
+            formulaCaps{};
+
+        std::array<
+            Settings::SkillExpSettings,
+            Settings::SKILL_COUNT>
+            skillExpGain{};
+
+        std::array<
+            Settings::PlayerLevelExpSettings,
+            Settings::SKILL_COUNT>
+            playerLevelExp{};
+
+        std::vector<Settings::MultiplierBreakpoint>
+            perksAtLevelUp;
+
+        std::array<
+            std::vector<Settings::AttributeBreakpoint>,
+            Settings::ATTRIBUTE_TABLE_COUNT>
+            attributesAtLevelUp{};
+
+        Settings::LegendarySettings legendary{};
+
+        // -------------------------------------------------------------
+        // Caps
+        // -------------------------------------------------------------
+
+        for (
+            std::size_t i = 0;
+            i < Settings::SKILL_COUNT;
+            ++i)
+        {
+            if (
+                !ReadValue(
+                    serialization,
+                    skillCaps[i],
+                    bytesReadTotal,
+                    length))
+            {
+                return false;
+            }
+
+            if (
+                skillCaps[i] < Settings::MIN_CAP ||
+                skillCaps[i] > Settings::HARD_MAX_CAP)
+            {
+                return false;
+            }
+        }
+
+        for (
+            std::size_t i = 0;
+            i < Settings::SKILL_COUNT;
+            ++i)
+        {
+            if (
+                !ReadValue(
+                    serialization,
+                    formulaCaps[i],
+                    bytesReadTotal,
+                    length))
+            {
+                return false;
+            }
+
+            if (
+                formulaCaps[i] < Settings::MIN_CAP ||
+                formulaCaps[i] > Settings::HARD_MAX_CAP)
+            {
+                return false;
+            }
+        }
+
+        // -------------------------------------------------------------
+        // Enchanting
+        // -------------------------------------------------------------
+
+        std::uint32_t magnitudeCap = 0;
+        std::uint32_t chargeCap = 0;
+        std::uint32_t linearCharge = 0;
+
+        if (
+            !ReadValue(
+                serialization,
+                magnitudeCap,
+                bytesReadTotal,
+                length) ||
+            !ReadValue(
+                serialization,
+                chargeCap,
+                bytesReadTotal,
+                length) ||
+            !ReadValue(
+                serialization,
+                linearCharge,
+                bytesReadTotal,
+                length))
+        {
+            return false;
+        }
+
+        if (
+            magnitudeCap < Settings::MIN_CAP ||
+            magnitudeCap > Settings::HARD_MAX_CAP)
+        {
+            return false;
+        }
+
+        if (
+            chargeCap < Settings::MIN_CAP ||
+            chargeCap >
+                Settings::MAX_ENCHANTING_CHARGE_CAP)
+        {
+            return false;
+        }
+
+        if (linearCharge > 1)
+        {
+            return false;
+        }
+
+        // -------------------------------------------------------------
+        // Skill XP
+        // -------------------------------------------------------------
+
+        for (
+            std::size_t skillSlot = 0;
+            skillSlot < Settings::SKILL_COUNT;
+            ++skillSlot)
+        {
+            auto &skillExp =
+                skillExpGain[skillSlot];
+
+            if (
+                !ReadValue(
+                    serialization,
+                    skillExp.baseHundredths,
+                    bytesReadTotal,
+                    length) ||
+                !ReadValue(
+                    serialization,
+                    skillExp.offsetHundredths,
+                    bytesReadTotal,
+                    length))
+            {
+                return false;
+            }
+
+            if (
+                skillExp.baseHundredths >
+                    Settings::MAX_MULTIPLIER_HUNDREDTHS ||
+                skillExp.offsetHundredths >
+                    Settings::MAX_MULTIPLIER_HUNDREDTHS)
+            {
+                return false;
+            }
+
+            if (
+                !ReadSkillExpBreakpointTable(
+                    serialization,
+                    bytesReadTotal,
+                    length,
+                    skillExp.bySkillLevel))
+            {
+                return false;
+            }
+
+            if (
+                !ReadSkillExpBreakpointTable(
+                    serialization,
+                    bytesReadTotal,
+                    length,
+                    skillExp.byCharacterLevel))
+            {
+                return false;
+            }
+        }
+
+        // -------------------------------------------------------------
+        // Player Level XP
+        // -------------------------------------------------------------
+
+        for (
+            std::size_t skillSlot = 0;
+            skillSlot < Settings::SKILL_COUNT;
+            ++skillSlot)
+        {
+            auto &levelExp =
+                playerLevelExp[skillSlot];
+
+            if (
+                !ReadValue(
+                    serialization,
+                    levelExp.multiplierHundredths,
+                    bytesReadTotal,
+                    length))
+            {
+                return false;
+            }
+
+            if (
+                levelExp.multiplierHundredths >
+                Settings::MAX_MULTIPLIER_HUNDREDTHS)
+            {
+                return false;
+            }
+
+            if (
+                !ReadMultiplierBreakpointTable(
+                    serialization,
+                    bytesReadTotal,
+                    length,
+                    levelExp.bySkillLevel))
+            {
+                return false;
+            }
+
+            if (
+                !ReadMultiplierBreakpointTable(
+                    serialization,
+                    bytesReadTotal,
+                    length,
+                    levelExp.byCharacterLevel))
+            {
+                return false;
+            }
+        }
+
+        // -------------------------------------------------------------
+        // PerksAtLevelUp
+        // -------------------------------------------------------------
+
+        if (
+            !ReadPerksAtLevelUpBreakpointTable(
+                serialization,
+                bytesReadTotal,
+                length,
+                perksAtLevelUp))
+        {
+            return false;
+        }
+
+        // -------------------------------------------------------------
+        // AttributesAtLevelUp
+        // -------------------------------------------------------------
+
+        for (
+            std::size_t tableIndex = 0;
+            tableIndex < Settings::ATTRIBUTE_TABLE_COUNT;
+            ++tableIndex)
+        {
+            if (
+                !ReadAttributeBreakpointTable(
+                    serialization,
+                    bytesReadTotal,
+                    length,
+                    attributesAtLevelUp[tableIndex]))
+            {
+                SKSE::log::error(
+                    "Failed to read serialized Attribute "
+                    "breakpoint table {}.",
+                    tableIndex);
+
+                return false;
+            }
+        }
+
+        // -------------------------------------------------------------
+        // Legendary settings
+        // -------------------------------------------------------------
+
+        std::uint32_t keepSkillLevel = 0;
+        std::uint32_t hideButton = 0;
+
+        if (
+            !ReadValue(
+                serialization,
+                keepSkillLevel,
+                bytesReadTotal,
+                length) ||
+            !ReadValue(
+                serialization,
+                hideButton,
+                bytesReadTotal,
+                length) ||
+            !ReadValue(
+                serialization,
+                legendary.skillLevelEnable,
+                bytesReadTotal,
+                length) ||
+            !ReadValue(
+                serialization,
+                legendary.skillLevelAfter,
+                bytesReadTotal,
+                length))
+        {
+            return false;
+        }
+
+        if (
+            keepSkillLevel > 1 ||
+            hideButton > 1)
+        {
+            return false;
+        }
+
+        legendary.keepSkillLevel =
+            keepSkillLevel != 0;
+
+        legendary.hideLegendaryButton =
+            hideButton != 0;
+
+        // -------------------------------------------------------------
+        // Exact record-size validation
+        // -------------------------------------------------------------
+
+        if (
+            bytesReadTotal != length)
+        {
+            SKSE::log::error(
+                "Unexpected UncapperMCM V7 "
+                "record size. Read {}, expected {}.",
+                bytesReadTotal,
+                length);
+
+            return false;
+        }
+
+        // -------------------------------------------------------------
+        // Commit only once everything has been validated.
+        // -------------------------------------------------------------
+
+        settings.enabled =
+            enabled != 0;
+
+        settings.skillCaps =
+            skillCaps;
+
+        settings.formulaCaps =
+            formulaCaps;
+
+        settings.enchanting.magnitudeLevelCap =
+            magnitudeCap;
+
+        settings.enchanting.chargeLevelCap =
+            chargeCap;
+
+        settings.enchanting.useLinearChargeFormula =
+            linearCharge != 0;
+
+        settings.skillExpGain =
+            std::move(skillExpGain);
+
+        settings.playerLevelExp =
+            std::move(playerLevelExp);
+
+        settings.perksAtLevelUp =
+            std::move(perksAtLevelUp);
+
+        settings.attributesAtLevelUp =
+            std::move(attributesAtLevelUp);
+
+        settings.legendary =
+            legendary;
+
         return true;
     }
 
@@ -2560,6 +3008,15 @@ namespace
             {
                 loaded =
                     LoadVersion6(
+                        serialization,
+                        length);
+            }
+            else if (
+                version ==
+                RECORD_VERSION_V7)
+            {
+                loaded =
+                    LoadVersion7(
                         serialization,
                         length);
             }

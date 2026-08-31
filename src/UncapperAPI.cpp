@@ -179,6 +179,20 @@ namespace
     using GetIniUseAttributesAtLevelUpFn =
         std::uint32_t(__stdcall *)();
 
+    // ---------------------------------------------------------------------
+    // Legendary settings function types
+    // ---------------------------------------------------------------------
+
+    using GetIniLegendaryValueFn =
+        std::uint32_t(__stdcall *)();
+
+    using SetLegendaryOverridesFn =
+        bool(__stdcall *)(
+            std::uint32_t keepSkillLevel,
+            std::uint32_t hideButton,
+            std::uint32_t skillLevelEnable,
+            std::uint32_t skillLevelAfter);
+
     HMODULE GetUncapperModule()
     {
         return ::GetModuleHandleA(
@@ -1317,5 +1331,119 @@ namespace UncapperAPI
         }
 
         return getter();
+    }
+
+    // ---------------------------------------------------------------------
+    // Legendary settings
+    // ---------------------------------------------------------------------
+
+    std::uint32_t GetIniUseLegendarySettings()
+    {
+        const auto getter =
+            GetUncapperFunction<GetIniLegendaryValueFn>(
+                "Uncapper_GetIniUseLegendarySettings");
+
+        if (!getter)
+        {
+            SKSE::log::error(
+                "Uncapper_GetIniUseLegendarySettings was not found.");
+
+            return UINT32_MAX;
+        }
+
+        return getter();
+    }
+
+    std::uint32_t GetIniLegendaryKeepSkillLevel()
+    {
+        const auto getter =
+            GetUncapperFunction<GetIniLegendaryValueFn>(
+                "Uncapper_GetIniLegendaryKeepSkillLevel");
+
+        if (!getter)
+        {
+            SKSE::log::error(
+                "Uncapper_GetIniLegendaryKeepSkillLevel was not found.");
+
+            return UINT32_MAX;
+        }
+
+        return getter();
+    }
+
+    std::uint32_t GetIniHideLegendaryButton()
+    {
+        const auto getter =
+            GetUncapperFunction<GetIniLegendaryValueFn>(
+                "Uncapper_GetIniHideLegendaryButton");
+
+        if (!getter)
+        {
+            SKSE::log::error(
+                "Uncapper_GetIniHideLegendaryButton was not found.");
+
+            return UINT32_MAX;
+        }
+
+        return getter();
+    }
+
+    std::uint32_t GetIniSkillLevelEnableLegendary()
+    {
+        const auto getter =
+            GetUncapperFunction<GetIniLegendaryValueFn>(
+                "Uncapper_GetIniSkillLevelEnableLegendary");
+
+        if (!getter)
+        {
+            SKSE::log::error(
+                "Uncapper_GetIniSkillLevelEnableLegendary was not found.");
+
+            return UINT32_MAX;
+        }
+
+        return getter();
+    }
+
+    std::uint32_t GetIniSkillLevelAfterLegendary()
+    {
+        const auto getter =
+            GetUncapperFunction<GetIniLegendaryValueFn>(
+                "Uncapper_GetIniSkillLevelAfterLegendary");
+
+        if (!getter)
+        {
+            SKSE::log::error(
+                "Uncapper_GetIniSkillLevelAfterLegendary was not found.");
+
+            return UINT32_MAX;
+        }
+
+        return getter();
+    }
+
+    bool SetLegendaryOverrides(
+        bool keepSkillLevel,
+        bool hideButton,
+        std::uint32_t skillLevelEnable,
+        std::uint32_t skillLevelAfter)
+    {
+        const auto setter =
+            GetUncapperFunction<SetLegendaryOverridesFn>(
+                "Uncapper_SetLegendaryOverrides");
+
+        if (!setter)
+        {
+            SKSE::log::error(
+                "Uncapper_SetLegendaryOverrides was not found.");
+
+            return false;
+        }
+
+        return setter(
+            keepSkillLevel ? 1u : 0u,
+            hideButton ? 1u : 0u,
+            skillLevelEnable,
+            skillLevelAfter);
     }
 }

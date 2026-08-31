@@ -130,6 +130,18 @@ Int ACTIVE_ATTRIBUTE_BREAKPOINT_COUNT = 0
 Int NEW_ATTRIBUTE_BREAKPOINT_LEVEL = 1
 
 
+; ============================================================================
+; Legendary Settings
+; ============================================================================
+
+Int OPTION_LEGENDARY_HOOK_STATUS
+Int OPTION_LEGENDARY_SKILL_LEVEL
+Int OPTION_LEGENDARY_AFTER_LEVEL
+Int OPTION_LEGENDARY_KEEP_LEVEL
+Int OPTION_LEGENDARY_HIDE_BUTTON
+Int OPTION_LEGENDARY_HIGHEST_SKILL_CAP
+
+
 String CURRENT_PAGE = ""
 
 
@@ -139,7 +151,7 @@ String CURRENT_PAGE = ""
 
 Int Function GetVersion()
 
-    Return 10
+    Return 11
 
 EndFunction
 
@@ -265,7 +277,7 @@ EndEvent
 
 Event OnVersionUpdate(Int newVersion)
 
-    If newVersion >= 10
+    If newVersion >= 11
 
         ModName = "Uncapper MCM"
 
@@ -309,6 +321,34 @@ Event OnPageReset(String page)
         AddEmptyOption()
 
         AddTextOption("Configuration", "Per-save overrides")
+
+        AddEmptyOption()
+
+        AddHeaderOption("Legendary Skills")
+
+        Bool legendaryHookEnabled = UncapperMCM.GetIniUseLegendarySettings()
+
+        If legendaryHookEnabled
+            OPTION_LEGENDARY_HOOK_STATUS = AddTextOption("Legendary Hooks", "Enabled in INI")
+        Else
+            OPTION_LEGENDARY_HOOK_STATUS = AddTextOption("Legendary Hooks", "Disabled in INI")
+        EndIf
+
+        Int legendaryFlags = OPTION_FLAG_NONE
+
+        If !enabled || !legendaryHookEnabled
+            legendaryFlags = OPTION_FLAG_DISABLED
+        EndIf
+
+        OPTION_LEGENDARY_SKILL_LEVEL = AddSliderOption("Legendary Skill Level", UncapperMCM.GetLegendarySkillLevel(), "{0}", legendaryFlags)
+
+        OPTION_LEGENDARY_AFTER_LEVEL = AddSliderOption("Skill Level After Legendary", UncapperMCM.GetLegendarySkillLevelAfter(), "{0}", legendaryFlags)
+
+        OPTION_LEGENDARY_KEEP_LEVEL = AddToggleOption("Keep Skill Level", UncapperMCM.GetLegendaryKeepSkillLevel(), legendaryFlags)
+
+        OPTION_LEGENDARY_HIDE_BUTTON = AddToggleOption("Hide Legendary Button", UncapperMCM.GetLegendaryHideButton(), legendaryFlags)
+
+        OPTION_LEGENDARY_HIGHEST_SKILL_CAP = AddTextOption("Highest Skill Cap", GetHighestSkillCap() as String)
 
 
     ElseIf page == "Skill Caps"
@@ -882,6 +922,44 @@ Event OnOptionSelect(Int option)
         Return
     EndIf
 
+    If option == OPTION_LEGENDARY_KEEP_LEVEL
+
+        Bool currentKeep = UncapperMCM.GetLegendaryKeepSkillLevel()
+        Bool newKeep = !currentKeep
+
+        Bool currentHide = UncapperMCM.GetLegendaryHideButton()
+        Int currentSkillLevel = UncapperMCM.GetLegendarySkillLevel()
+        Int currentAfterLevel = UncapperMCM.GetLegendarySkillLevelAfter()
+
+        If UncapperMCM.SetLegendarySettings(newKeep, currentHide, currentSkillLevel, currentAfterLevel)
+            SetToggleOptionValue(OPTION_LEGENDARY_KEEP_LEVEL, newKeep)
+        Else
+            ShowMessage("Unable to change Keep Skill Level. When disabled, Skill Level After Legendary must be 0 or lower than the Legendary Skill Level.", false)
+        EndIf
+
+        Return
+
+    EndIf
+
+
+    If option == OPTION_LEGENDARY_HIDE_BUTTON
+
+        Bool currentKeep = UncapperMCM.GetLegendaryKeepSkillLevel()
+        Bool currentHide = UncapperMCM.GetLegendaryHideButton()
+        Bool newHide = !currentHide
+
+        Int currentSkillLevel = UncapperMCM.GetLegendarySkillLevel()
+        Int currentAfterLevel = UncapperMCM.GetLegendarySkillLevelAfter()
+
+        If UncapperMCM.SetLegendarySettings(currentKeep, newHide, currentSkillLevel, currentAfterLevel)
+            SetToggleOptionValue(OPTION_LEGENDARY_HIDE_BUTTON, newHide)
+        EndIf
+
+        Return
+
+    EndIf
+
+
     If option == OPTION_ENCHANT_LINEAR_CHARGE
 
         Bool newValue = !UncapperMCM.GetEnchantUseLinearCharge()
@@ -1398,6 +1476,34 @@ Event OnOptionSliderOpen(Int option)
     EndIf
 
 
+    If option == OPTION_LEGENDARY_SKILL_LEVEL
+
+        Int legendarySkillLevel = UncapperMCM.GetLegendarySkillLevel()
+
+        SetSliderDialogStartValue(legendarySkillLevel)
+        SetSliderDialogDefaultValue(100.0)
+        SetSliderDialogRange(1.0, 500.0)
+        SetSliderDialogInterval(1.0)
+
+        Return
+
+    EndIf
+
+
+    If option == OPTION_LEGENDARY_AFTER_LEVEL
+
+        Int legendaryAfterLevel = UncapperMCM.GetLegendarySkillLevelAfter()
+
+        SetSliderDialogStartValue(legendaryAfterLevel)
+        SetSliderDialogDefaultValue(0.0)
+        SetSliderDialogRange(0.0, 500.0)
+        SetSliderDialogInterval(1.0)
+
+        Return
+
+    EndIf
+
+
     If option == OPTION_ENCHANT_MAGNITUDE_CAP
 
         SetSliderDialogStartValue(UncapperMCM.GetEnchantMagnitudeCap())
@@ -1731,6 +1837,46 @@ Event OnOptionSliderAccept(Int option, Float value)
     EndIf
 
     Int newValue = value as Int
+
+    If option == OPTION_LEGENDARY_SKILL_LEVEL
+
+        Bool currentKeep = UncapperMCM.GetLegendaryKeepSkillLevel()
+        Bool currentHide = UncapperMCM.GetLegendaryHideButton()
+        Int currentAfterLevel = UncapperMCM.GetLegendarySkillLevelAfter()
+
+        If UncapperMCM.SetLegendarySettings(currentKeep, currentHide, newValue, currentAfterLevel)
+            SetSliderOptionValue(OPTION_LEGENDARY_SKILL_LEVEL, newValue, "{0}")
+
+            Int highestCap = GetHighestSkillCap()
+
+            If newValue > highestCap
+                ShowMessage("The Legendary Skill Level is above your current highest Skill Cap. Legendary may be unreachable through normal skill progression.", false)
+            EndIf
+        Else
+            ShowMessage("Unable to change the Legendary Skill Level. When Keep Skill Level is disabled, Skill Level After Legendary must be 0 or lower than the Legendary Skill Level.", false)
+        EndIf
+
+        Return
+
+    EndIf
+
+
+    If option == OPTION_LEGENDARY_AFTER_LEVEL
+
+        Bool currentKeep = UncapperMCM.GetLegendaryKeepSkillLevel()
+        Bool currentHide = UncapperMCM.GetLegendaryHideButton()
+        Int currentSkillLevel = UncapperMCM.GetLegendarySkillLevel()
+
+        If UncapperMCM.SetLegendarySettings(currentKeep, currentHide, currentSkillLevel, newValue)
+            SetSliderOptionValue(OPTION_LEGENDARY_AFTER_LEVEL, newValue, "{0}")
+        Else
+            ShowMessage("Unable to change Skill Level After Legendary. When Keep Skill Level is disabled, this value must be 0 or lower than the Legendary Skill Level.", false)
+        EndIf
+
+        Return
+
+    EndIf
+
 
     If option == OPTION_ENCHANT_MAGNITUDE_CAP
 
@@ -2081,6 +2227,64 @@ Event OnOptionHighlight(Int option)
     EndIf
 
 
+    If option == OPTION_LEGENDARY_HOOK_STATUS
+
+        If UncapperMCM.GetIniUseLegendarySettings()
+            SetInfoText("Legendary hooks were enabled by bUseLegendarySettings in SkyrimUncapper.ini when Skyrim started. This status cannot be changed at runtime.")
+        Else
+            SetInfoText("Legendary hooks are disabled. Set bUseLegendarySettings=true in SkyrimUncapper.ini and restart Skyrim to use Legendary runtime settings.")
+        EndIf
+
+        Return
+
+    EndIf
+
+
+    If option == OPTION_LEGENDARY_SKILL_LEVEL
+
+        SetInfoText("Base skill level required before a vanilla skill can become Legendary. The threshold applies globally to all 18 vanilla skills. It is independent from Skill Caps and can be set from 1 to 500.")
+
+        Return
+
+    EndIf
+
+
+    If option == OPTION_LEGENDARY_AFTER_LEVEL
+
+        SetInfoText("Skill level applied after making a skill Legendary. 0 uses Skyrim's native Legendary reset value. When Keep Skill Level is disabled, a non-zero value must be lower than the Legendary Skill Level.")
+
+        Return
+
+    EndIf
+
+
+    If option == OPTION_LEGENDARY_KEEP_LEVEL
+
+        SetInfoText("Keep the skill at its current level after making it Legendary. Skill Level After Legendary is then ignored, and the skill may remain immediately eligible to become Legendary again.")
+
+        Return
+
+    EndIf
+
+
+    If option == OPTION_LEGENDARY_HIDE_BUTTON
+
+        SetInfoText("Hide the Legendary button or hint in the vanilla Skills menu. This only affects visibility: the Legendary action may still be available through its keyboard input when the skill meets the threshold.")
+
+        Return
+
+    EndIf
+
+
+    If option == OPTION_LEGENDARY_HIGHEST_SKILL_CAP
+
+        SetInfoText("Highest Skill Cap currently configured across the 18 vanilla skills. This is informational only and does not automatically change the Legendary Skill Level.")
+
+        Return
+
+    EndIf
+
+
     If option == OPTION_ENCHANT_MAGNITUDE_CAP
 
         SetInfoText("Maximum Enchanting level used to calculate enchantment strength. For example, if set to 100, increasing Enchanting above 100 will not make enchantments stronger through this calculation.")
@@ -2417,6 +2621,30 @@ EndEvent
 ; ============================================================================
 ; Helpers
 ; ============================================================================
+
+Int Function GetHighestSkillCap()
+
+    Int highest = 0
+    Int i = 0
+
+    While i < 18
+
+        Int currentCap = UncapperMCM.GetSkillCap(i)
+
+        If currentCap > highest
+            highest = currentCap
+        EndIf
+
+        i += 1
+
+    EndWhile
+
+    Return highest
+
+EndFunction
+
+
+
 
 Float Function HundredthsToFloat(Int value)
 

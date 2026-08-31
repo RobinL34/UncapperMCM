@@ -30,6 +30,12 @@ namespace Settings
     constexpr std::uint32_t ATTRIBUTE_MIN_VALUE = 0;
     constexpr std::uint32_t ATTRIBUTE_MAX_VALUE = 100;
 
+    constexpr std::uint32_t MIN_LEGENDARY_SKILL_LEVEL = 1;
+    constexpr std::uint32_t MAX_LEGENDARY_SKILL_LEVEL = 500;
+
+    constexpr std::uint32_t MIN_AFTER_LEGENDARY_LEVEL = 0;
+    constexpr std::uint32_t MAX_AFTER_LEGENDARY_LEVEL = 500;
+
 
     enum class AttributeTable : std::uint32_t
     {
@@ -131,8 +137,8 @@ namespace Settings
         bool keepSkillLevel = false;
         bool hideLegendaryButton = false;
 
-        std::uint32_t enableLevel = 0;
-        std::uint32_t levelAfterLegendary = 0;
+        std::uint32_t skillLevelEnable = 100;
+        std::uint32_t skillLevelAfter = 0;
     };
 
 
@@ -161,6 +167,7 @@ namespace Settings
         bool useAttributesAtLevelUp = false;
 
         LegendarySettings legendary{};
+        bool useLegendarySettings = false;
     };
 
 
@@ -322,6 +329,20 @@ namespace Settings
     bool SetAttributeBreakpoints(
         std::size_t tableIndex,
         const std::vector<AttributeBreakpoint>& breakpoints
+    );
+
+
+    // ---------------------------------------------------------------------
+    // Legendary settings
+    // ---------------------------------------------------------------------
+
+    bool GetUseLegendarySettings();
+
+    const LegendarySettings&
+        GetLegendarySettings();
+
+    bool SetLegendarySettings(
+        const LegendarySettings& settings
     );
 
 

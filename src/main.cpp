@@ -1993,6 +1993,100 @@ namespace
     }
 
     // =========================================================================
+    // Legendary settings
+    // =========================================================================
+
+    bool PapyrusGetIniUseLegendarySettings(
+        RE::StaticFunctionTag *)
+    {
+        return Settings::
+            GetUseLegendarySettings();
+    }
+
+    bool PapyrusGetLegendaryKeepSkillLevel(
+        RE::StaticFunctionTag *)
+    {
+        return Settings::
+            GetLegendarySettings()
+            .keepSkillLevel;
+    }
+
+    bool PapyrusGetLegendaryHideButton(
+        RE::StaticFunctionTag *)
+    {
+        return Settings::
+            GetLegendarySettings()
+            .hideLegendaryButton;
+    }
+
+    std::int32_t PapyrusGetLegendarySkillLevel(
+        RE::StaticFunctionTag *)
+    {
+        return static_cast<std::int32_t>(
+            Settings::
+                GetLegendarySettings()
+                .skillLevelEnable);
+    }
+
+    std::int32_t PapyrusGetLegendarySkillLevelAfter(
+        RE::StaticFunctionTag *)
+    {
+        return static_cast<std::int32_t>(
+            Settings::
+                GetLegendarySettings()
+                .skillLevelAfter);
+    }
+
+    bool PapyrusSetLegendarySettings(
+        RE::StaticFunctionTag *,
+        bool keepSkillLevel,
+        bool hideButton,
+        std::int32_t skillLevel,
+        std::int32_t skillLevelAfter)
+    {
+        if (
+            !Settings::GetUseLegendarySettings() ||
+            skillLevel <
+                static_cast<std::int32_t>(
+                    Settings::MIN_LEGENDARY_SKILL_LEVEL) ||
+            skillLevel >
+                static_cast<std::int32_t>(
+                    Settings::MAX_LEGENDARY_SKILL_LEVEL) ||
+            skillLevelAfter <
+                static_cast<std::int32_t>(
+                    Settings::MIN_AFTER_LEGENDARY_LEVEL) ||
+            skillLevelAfter >
+                static_cast<std::int32_t>(
+                    Settings::MAX_AFTER_LEGENDARY_LEVEL))
+        {
+            return false;
+        }
+
+        const Settings::LegendarySettings legendary{
+            keepSkillLevel,
+            hideButton,
+            static_cast<std::uint32_t>(
+                skillLevel),
+            static_cast<std::uint32_t>(
+                skillLevelAfter)};
+
+        const bool result =
+            Settings::
+                SetLegendarySettings(
+                    legendary);
+
+        SKSE::log::info(
+            "Papyrus SetLegendarySettings({}, {}, {}, {}) -> {}",
+            keepSkillLevel,
+            hideButton,
+            skillLevel,
+            skillLevelAfter,
+            result);
+
+        return result;
+    }
+
+    // =========================================================================
     // General
     // =========================================================================
 
@@ -2267,6 +2361,40 @@ bool RegisterPapyrus(
         "GetIniUseAttributesAtLevelUp",
         PAPYRUS_CLASS,
         PapyrusGetIniUseAttributesAtLevelUp);
+
+    // -------------------------------------------------------------------------
+    // Legendary settings
+    // -------------------------------------------------------------------------
+
+    vm->RegisterFunction(
+        "GetIniUseLegendarySettings",
+        PAPYRUS_CLASS,
+        PapyrusGetIniUseLegendarySettings);
+
+    vm->RegisterFunction(
+        "GetLegendaryKeepSkillLevel",
+        PAPYRUS_CLASS,
+        PapyrusGetLegendaryKeepSkillLevel);
+
+    vm->RegisterFunction(
+        "GetLegendaryHideButton",
+        PAPYRUS_CLASS,
+        PapyrusGetLegendaryHideButton);
+
+    vm->RegisterFunction(
+        "GetLegendarySkillLevel",
+        PAPYRUS_CLASS,
+        PapyrusGetLegendarySkillLevel);
+
+    vm->RegisterFunction(
+        "GetLegendarySkillLevelAfter",
+        PAPYRUS_CLASS,
+        PapyrusGetLegendarySkillLevelAfter);
+
+    vm->RegisterFunction(
+        "SetLegendarySettings",
+        PAPYRUS_CLASS,
+        PapyrusSetLegendarySettings);
 
     // -------------------------------------------------------------------------
     // General

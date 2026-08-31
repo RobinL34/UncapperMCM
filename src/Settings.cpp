@@ -639,6 +639,39 @@ namespace
         return true;
     }
 
+    bool ValidateLegendaryRuntimeSettings(
+        const Settings::LegendarySettings &settings)
+    {
+        if (
+            settings.skillLevelEnable <
+                Settings::MIN_LEGENDARY_SKILL_LEVEL ||
+            settings.skillLevelEnable >
+                Settings::MAX_LEGENDARY_SKILL_LEVEL)
+        {
+            return false;
+        }
+
+        if (
+            settings.skillLevelAfter <
+                Settings::MIN_AFTER_LEGENDARY_LEVEL ||
+            settings.skillLevelAfter >
+                Settings::MAX_AFTER_LEGENDARY_LEVEL)
+        {
+            return false;
+        }
+
+        if (
+            !settings.keepSkillLevel &&
+            settings.skillLevelAfter != 0 &&
+            settings.skillLevelAfter >=
+                settings.skillLevelEnable)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
     bool ApplyPerksAtLevelUpBreakpointTable(
         const std::vector<Settings::MultiplierBreakpoint> &breakpoints)
     {
@@ -890,6 +923,80 @@ namespace
         return true;
     }
 
+    bool LoadLegendarySettingsFromIni(
+        Settings::LegendarySettings &output,
+        bool &useLegendarySettings)
+    {
+        const auto useLegendary =
+            UncapperAPI::
+                GetIniUseLegendarySettings();
+
+        const auto keepSkillLevel =
+            UncapperAPI::
+                GetIniLegendaryKeepSkillLevel();
+
+        const auto hideButton =
+            UncapperAPI::
+                GetIniHideLegendaryButton();
+
+        const auto skillLevelEnable =
+            UncapperAPI::
+                GetIniSkillLevelEnableLegendary();
+
+        const auto skillLevelAfter =
+            UncapperAPI::
+                GetIniSkillLevelAfterLegendary();
+
+        if (
+            useLegendary == UINT32_MAX ||
+            keepSkillLevel == UINT32_MAX ||
+            hideButton == UINT32_MAX ||
+            skillLevelEnable == UINT32_MAX ||
+            skillLevelAfter == UINT32_MAX)
+        {
+            SKSE::log::error(
+                "Failed to load Legendary settings "
+                "from SkyrimUncapper.ini.");
+
+            return false;
+        }
+
+        if (
+            useLegendary > 1 ||
+            keepSkillLevel > 1 ||
+            hideButton > 1)
+        {
+            SKSE::log::error(
+                "Invalid Legendary boolean values loaded "
+                "from SkyrimUncapper.ini: use={}, keep={}, hide={}.",
+                useLegendary,
+                keepSkillLevel,
+                hideButton);
+
+            return false;
+        }
+
+        Settings::LegendarySettings legendary{};
+
+        legendary.keepSkillLevel =
+            keepSkillLevel != 0;
+
+        legendary.hideLegendaryButton =
+            hideButton != 0;
+
+        legendary.skillLevelEnable =
+            skillLevelEnable;
+
+        legendary.skillLevelAfter =
+            skillLevelAfter;
+
+        output = legendary;
+        useLegendarySettings =
+            useLegendary != 0;
+
+        return true;
+    }
+
 }
 
 namespace Settings
@@ -1078,6 +1185,23 @@ namespace Settings
         g_settings.useAttributesAtLevelUp =
             useAttributesAtLevelUp != 0;
 
+        LegendarySettings legendary{};
+        bool useLegendarySettings = false;
+
+        if (
+            !LoadLegendarySettingsFromIni(
+                legendary,
+                useLegendarySettings))
+        {
+            return false;
+        }
+
+        g_settings.legendary =
+            legendary;
+
+        g_settings.useLegendarySettings =
+            useLegendarySettings;
+
         const auto magnitudeCap =
             UncapperAPI::
                 GetIniEnchantMagnitudeCap();
@@ -1116,7 +1240,7 @@ namespace Settings
         SKSE::log::info(
             "Skill caps, formula caps, Enchanting "
             "Skill XP, Player Level XP and PerksAtLevelUp "
-            "and AttributesAtLevelUp settings loaded "
+            "and AttributesAtLevelUp and Legendary settings loaded "
             "from SkyrimUncapper.ini.");
 
         return true;
@@ -1784,6 +1908,54 @@ namespace Settings
     }
 
     // ---------------------------------------------------------------------
+    // Legendary settings
+    // ---------------------------------------------------------------------
+
+    bool GetUseLegendarySettings()
+    {
+        return g_settings
+            .useLegendarySettings;
+    }
+
+    const LegendarySettings &
+    GetLegendarySettings()
+    {
+        return g_settings
+            .legendary;
+    }
+
+    bool SetLegendarySettings(
+        const LegendarySettings &settings)
+    {
+        if (
+            !g_settings.useLegendarySettings ||
+            !ValidateLegendaryRuntimeSettings(
+                settings))
+        {
+            return false;
+        }
+
+        if (g_settings.enabled)
+        {
+            if (
+                !UncapperAPI::
+                    SetLegendaryOverrides(
+                        settings.keepSkillLevel,
+                        settings.hideLegendaryButton,
+                        settings.skillLevelEnable,
+                        settings.skillLevelAfter))
+            {
+                return false;
+            }
+        }
+
+        g_settings.legendary =
+            settings;
+
+        return true;
+    }
+
+    // ---------------------------------------------------------------------
     // Apply
     // ---------------------------------------------------------------------
 
@@ -2039,6 +2211,43 @@ namespace Settings
             }
         }
 
+        if (g_settings.useLegendarySettings)
+        {
+            const auto &legendary =
+                g_settings.legendary;
+
+            if (
+                ValidateLegendaryRuntimeSettings(
+                    legendary))
+            {
+                if (
+                    !UncapperAPI::
+                        SetLegendaryOverrides(
+                            legendary.keepSkillLevel,
+                            legendary.hideLegendaryButton,
+                            legendary.skillLevelEnable,
+                            legendary.skillLevelAfter))
+                {
+                    SKSE::log::error(
+                        "Failed to apply Legendary settings.");
+
+                    return false;
+                }
+            }
+            else
+            {
+                SKSE::log::warn(
+                    "Legendary settings were not overridden because "
+                    "the current INI-compatible values are outside "
+                    "the MCM runtime limits: keep={}, hide={}, "
+                    "threshold={}, after={}.",
+                    legendary.keepSkillLevel,
+                    legendary.hideLegendaryButton,
+                    legendary.skillLevelEnable,
+                    legendary.skillLevelAfter);
+            }
+        }
+
         const auto magnitudeCap =
             g_settings
                 .enchanting
@@ -2093,7 +2302,7 @@ namespace Settings
         SKSE::log::info(
             "Skill caps, formula caps, Enchanting, "
             "Skill XP, Player Level XP and PerksAtLevelUp "
-            "and AttributesAtLevelUp settings applied.");
+            "and AttributesAtLevelUp and Legendary settings applied.");
 
         return true;
     }
