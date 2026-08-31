@@ -39,7 +39,7 @@ Int ACTIVE_XP_BREAKPOINT_COUNT = 0
 
 Bool CURRENT_XP_CHARACTER_LEVEL = false
 
-Int NEW_XP_BREAKPOINT_LEVEL = 0
+Int NEW_XP_BREAKPOINT_LEVEL = 1
 
 Int BULK_XP_BASE_MULTIPLIER = 100
 Int BULK_XP_OFFSET_MULTIPLIER = 100
@@ -78,7 +78,7 @@ Int ACTIVE_PLAYER_XP_BREAKPOINT_COUNT = 0
 
 Bool CURRENT_PLAYER_XP_CHARACTER_LEVEL = false
 
-Int NEW_PLAYER_XP_BREAKPOINT_LEVEL = 0
+Int NEW_PLAYER_XP_BREAKPOINT_LEVEL = 1
 
 Int BULK_PLAYER_XP_MULTIPLIER = 100
 
@@ -796,7 +796,7 @@ Function DrawPerksAtLevelUpPage(Bool enabled)
 
         OPTION_PERKS_BREAKPOINT_LEVELS[i] = AddSliderOption("Breakpoint " + (i + 1) + " Level", level, "{0}", levelFlags)
 
-        OPTION_PERKS_BREAKPOINT_VALUES[i] = AddSliderOption("Perks @ Level " + level, HundredthsToFloat(perkValue), "{1}", flags)
+        OPTION_PERKS_BREAKPOINT_VALUES[i] = AddSliderOption("Perks @ Level " + level, HundredthsToFloat(perkValue), "{0}", flags)
 
         i += 1
 
@@ -994,7 +994,7 @@ Event OnOptionSelect(Int option)
         If added
             ForcePageReset()
         Else
-            ShowMessage("Unable to add this breakpoint. The level may already exist, be outside 0-500, or the table may already contain 32 breakpoints.", false)
+            ShowMessage("Unable to add this breakpoint. The level may already exist, be outside 1-500, or the table may already contain 32 breakpoints.", false)
         EndIf
 
         Return
@@ -1014,7 +1014,7 @@ Event OnOptionSelect(Int option)
         If added
             ForcePageReset()
         Else
-            ShowMessage("Unable to add this breakpoint. The level may already exist, be outside 0-500, or the table may already contain 32 breakpoints.", false)
+            ShowMessage("Unable to add this breakpoint. The level may already exist, be outside 1-500, or the table may already contain 32 breakpoints.", false)
         EndIf
 
         Return
@@ -1028,7 +1028,7 @@ Event OnOptionSelect(Int option)
         If added
             ForcePageReset()
         Else
-            ShowMessage("Unable to add this breakpoint. The level may already exist, be outside 0-500, or the table may already contain 32 breakpoints.", false)
+            ShowMessage("Unable to add this breakpoint. The level may already exist, be outside 1-500, or the table may already contain 32 breakpoints.", false)
         EndIf
 
         Return
@@ -1667,8 +1667,8 @@ Event OnOptionSliderOpen(Int option)
     If option == OPTION_PLAYER_XP_NEW_BREAKPOINT_LEVEL
 
         SetSliderDialogStartValue(NEW_PLAYER_XP_BREAKPOINT_LEVEL)
-        SetSliderDialogDefaultValue(0.0)
-        SetSliderDialogRange(0.0, 500.0)
+        SetSliderDialogDefaultValue(1.0)
+        SetSliderDialogRange(1.0, 500.0)
         SetSliderDialogInterval(1.0)
 
         Return
@@ -1757,7 +1757,7 @@ Event OnOptionSliderOpen(Int option)
         SetSliderDialogStartValue(HundredthsToFloat(perkValue))
         SetSliderDialogDefaultValue(1.0)
         SetSliderDialogRange(0.0, 100.0)
-        SetSliderDialogInterval(0.5)
+        SetSliderDialogInterval(1.0)
 
         Return
 
@@ -2130,7 +2130,7 @@ Event OnOptionSliderAccept(Int option, Float value)
         Int perkLevel = UncapperMCM.GetPerksAtLevelUpBreakpointLevel(breakpointIndex)
 
         If UncapperMCM.SetPerksAtLevelUpBreakpoint(breakpointIndex, perkLevel, perkHundredths)
-            SetSliderOptionValue(option, HundredthsToFloat(perkHundredths), "{1}")
+            SetSliderOptionValue(option, HundredthsToFloat(perkHundredths), "{0}")
         EndIf
 
         Return
@@ -2353,7 +2353,7 @@ Event OnOptionHighlight(Int option)
 
     If option == OPTION_XP_NEW_BREAKPOINT_LEVEL
 
-        SetInfoText("Choose the level where a new XP multiplier breakpoint should begin. Any integer level from 0 to 500 can be used.")
+        SetInfoText("Choose the level where a new XP multiplier breakpoint should begin. Any integer level from 1 to 500 can be used.")
 
         Return
 
@@ -2425,7 +2425,7 @@ Event OnOptionHighlight(Int option)
 
     If option == OPTION_PLAYER_XP_NEW_BREAKPOINT_LEVEL
 
-        SetInfoText("Choose the level where a new player-level XP multiplier breakpoint should begin. Any integer level from 0 to 500 can be used.")
+        SetInfoText("Choose the level where a new player-level XP multiplier breakpoint should begin. Any integer level from 1 to 500 can be used.")
 
         Return
 
@@ -2506,7 +2506,7 @@ Event OnOptionHighlight(Int option)
 
     If option == OPTION_PERKS_NEW_BREAKPOINT_LEVEL
 
-        SetInfoText("Choose the player level where a new perk-award breakpoint should begin. Any integer level from 0 to 500 can be used.")
+        SetInfoText("Choose the player level where a new perk-award breakpoint should begin. Any integer level from 1 to 500 can be used.")
 
         Return
 
@@ -3124,7 +3124,7 @@ EndFunction
 
 Bool Function AddBulkXpBreakpoint(Bool characterLevel, Int level)
 
-    If level < 0 || level > 500
+    If level <= 0 || level > 500
         Return false
     EndIf
 
@@ -3335,7 +3335,7 @@ EndFunction
 
 Bool Function AddBulkPlayerXpBreakpoint(Bool characterLevel, Int level)
 
-    If level < 0 || level > 500
+    If level <= 0 || level > 500
         Return false
     EndIf
 
