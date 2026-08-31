@@ -1,0 +1,52 @@
+# CMake build output
+/build/
+/out/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+*.cmake
+
+# Compiled C++ binaries
+*.dll
+*.pdb
+*.lib
+*.exp
+*.obj
+*.o
+*.exe
+
+# Compiled Papyrus scripts
+/dist/Scripts/*.pex
+
+# Papyrus dir
+/papyrus-skyui-source/
+/papyrus-skyui/
+
+# Visual Studio / VS Code
+.vs/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# vcpkg generated files
+vcpkg_installed/
+.vcpkg/
+
+# Temporary / backup files
+*.tmp
+*.temp
+*.bak
+*.swp
+*.log
+
+# Archives
+*.zip
+*.7z
+*.rar
+
+# OS files
+.DS_Store
+Thumbs.db
