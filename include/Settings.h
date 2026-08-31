@@ -23,6 +23,7 @@ namespace Settings
 
     constexpr std::size_t MAX_SKILL_EXP_BREAKPOINTS = 32;
     constexpr std::size_t MAX_LEVEL_EXP_BREAKPOINTS = 32;
+    constexpr std::size_t MAX_PERKS_AT_LEVEL_UP_BREAKPOINTS = 32;
 
 
     // ---------------------------------------------------------------------
@@ -275,6 +276,18 @@ namespace Settings
 
     bool SetPlayerLevelExpCharacterLevelBreakpoints(
         std::size_t skillSlot,
+        const std::vector<MultiplierBreakpoint>& breakpoints
+    );
+
+
+    // ---------------------------------------------------------------------
+    // Perks at level up
+    // ---------------------------------------------------------------------
+
+    const std::vector<MultiplierBreakpoint>&
+        GetPerksAtLevelUpBreakpoints();
+
+    bool SetPerksAtLevelUpBreakpoints(
         const std::vector<MultiplierBreakpoint>& breakpoints
     );
 

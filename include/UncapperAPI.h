@@ -228,4 +228,31 @@ namespace UncapperAPI
         std::uint32_t skillSlot,
         std::uint32_t count
     );
+
+
+    // ---------------------------------------------------------------------
+    // Perks at level up
+    // ---------------------------------------------------------------------
+
+    std::uint32_t GetIniPerksAtLevelUpBreakpointCount();
+
+    std::uint32_t GetIniPerksAtLevelUpBreakpointLevel(
+        std::uint32_t index
+    );
+
+    std::uint32_t GetIniPerksAtLevelUpBreakpointValue(
+        std::uint32_t index
+    );
+
+    bool BeginPerksAtLevelUpOverride();
+
+    bool SetPerksAtLevelUpBreakpoint(
+        std::uint32_t index,
+        std::uint32_t level,
+        std::uint32_t perkHundredths
+    );
+
+    bool CommitPerksAtLevelUpOverride(
+        std::uint32_t count
+    );
 }

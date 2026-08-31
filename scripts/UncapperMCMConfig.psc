@@ -91,6 +91,21 @@ Int[] BULK_PLAYER_XP_CHARACTER_LEVELS
 Int[] BULK_PLAYER_XP_CHARACTER_MULTIPLIERS
 
 
+; ============================================================================
+; Perks at Level Up
+; ============================================================================
+
+Int OPTION_PERKS_NEW_BREAKPOINT_LEVEL
+Int OPTION_PERKS_ADD_BREAKPOINT
+Int OPTION_PERKS_REMOVE_BREAKPOINT
+
+Int[] OPTION_PERKS_BREAKPOINT_LEVELS
+Int[] OPTION_PERKS_BREAKPOINT_VALUES
+
+Int ACTIVE_PERKS_BREAKPOINT_COUNT = 0
+Int NEW_PERKS_BREAKPOINT_LEVEL = 1
+
+
 String CURRENT_PAGE = ""
 
 
@@ -100,7 +115,7 @@ String CURRENT_PAGE = ""
 
 Int Function GetVersion()
 
-    Return 8
+    Return 9
 
 EndFunction
 
@@ -152,6 +167,9 @@ Function InitializeMenuData()
     OPTION_PLAYER_XP_BREAKPOINT_LEVELS = new Int[32]
     OPTION_PLAYER_XP_BREAKPOINT_MULTIPLIERS = new Int[32]
 
+    OPTION_PERKS_BREAKPOINT_LEVELS = new Int[32]
+    OPTION_PERKS_BREAKPOINT_VALUES = new Int[32]
+
     BULK_XP_SKILL_LEVELS = new Int[32]
     BULK_XP_SKILL_BASES = new Int[32]
     BULK_XP_SKILL_OFFSETS = new Int[32]
@@ -180,7 +198,7 @@ Function InitializeMenuData()
     BULK_PLAYER_XP_CHARACTER_LEVELS[0] = 0
     BULK_PLAYER_XP_CHARACTER_MULTIPLIERS[0] = 100
 
-    Pages = new String[10]
+    Pages = new String[11]
 
     Pages[0] = "General"
     Pages[1] = "Skill Caps"
@@ -192,6 +210,7 @@ Function InitializeMenuData()
     Pages[7] = "Player Level XP"
     Pages[8] = "Player XP by Skill Level"
     Pages[9] = "Player XP by Character Level"
+    Pages[10] = "Perks at Level Up"
 
 EndFunction
 
@@ -207,7 +226,7 @@ EndEvent
 
 Event OnVersionUpdate(Int newVersion)
 
-    If newVersion >= 8
+    If newVersion >= 9
 
         ModName = "Uncapper MCM"
 
@@ -427,6 +446,11 @@ Event OnPageReset(String page)
 
         DrawPlayerXpBreakpointPage(true, enabled)
 
+
+    ElseIf page == "Perks at Level Up"
+
+        DrawPerksAtLevelUpPage(enabled)
+
     EndIf
 
 EndEvent
@@ -632,6 +656,72 @@ EndFunction
 
 
 ; ============================================================================
+; Draw Perks at Level Up page
+; ============================================================================
+
+Function DrawPerksAtLevelUpPage(Bool enabled)
+
+    SetCursorFillMode(TOP_TO_BOTTOM)
+
+    Int flags = OPTION_FLAG_NONE
+
+    If !enabled
+        flags = OPTION_FLAG_DISABLED
+    EndIf
+
+    AddHeaderOption("Perks at Level Up")
+
+    AddTextOption("Reward Model", "Cumulative", flags)
+
+    AddEmptyOption()
+
+    AddHeaderOption("Add / Remove Breakpoint")
+
+    OPTION_PERKS_NEW_BREAKPOINT_LEVEL = AddSliderOption("New Breakpoint Level", NEW_PERKS_BREAKPOINT_LEVEL, "{0}", flags)
+
+    OPTION_PERKS_ADD_BREAKPOINT = AddTextOption("Add Breakpoint", "Add", flags)
+
+    Int count = UncapperMCM.GetPerksAtLevelUpBreakpointCount()
+
+    ACTIVE_PERKS_BREAKPOINT_COUNT = count
+
+    Int removeFlags = flags
+
+    If count <= 1
+        removeFlags = OPTION_FLAG_DISABLED
+    EndIf
+
+    OPTION_PERKS_REMOVE_BREAKPOINT = AddMenuOption("Remove Breakpoint", "Choose...", removeFlags)
+
+    AddEmptyOption()
+
+    AddHeaderOption("Breakpoints")
+
+    Int i = 0
+
+    While i < count
+
+        Int level = UncapperMCM.GetPerksAtLevelUpBreakpointLevel(i)
+        Int perkValue = UncapperMCM.GetPerksAtLevelUpBreakpointValue(i)
+
+        Int levelFlags = flags
+
+        If i == 0
+            levelFlags = OPTION_FLAG_DISABLED
+        EndIf
+
+        OPTION_PERKS_BREAKPOINT_LEVELS[i] = AddSliderOption("Breakpoint " + (i + 1) + " Level", level, "{0}", levelFlags)
+
+        OPTION_PERKS_BREAKPOINT_VALUES[i] = AddSliderOption("Perks @ Level " + level, HundredthsToFloat(perkValue), "{1}", flags)
+
+        i += 1
+
+    EndWhile
+
+EndFunction
+
+
+; ============================================================================
 ; Select options
 ; ============================================================================
 
@@ -715,6 +805,21 @@ Event OnOptionSelect(Int option)
         Return
 
     EndIf
+
+    If option == OPTION_PERKS_ADD_BREAKPOINT
+
+        Bool added = UncapperMCM.AddPerksAtLevelUpBreakpoint(NEW_PERKS_BREAKPOINT_LEVEL, 100)
+
+        If added
+            ForcePageReset()
+        Else
+            ShowMessage("Unable to add this breakpoint. The level may already exist, be outside 0-500, or the table may already contain 32 breakpoints.", false)
+        EndIf
+
+        Return
+
+    EndIf
+
 
     If option == OPTION_XP_APPLY_ALL_BASE
 
@@ -900,6 +1005,36 @@ Event OnOptionMenuOpen(Int option)
 
     EndIf
 
+    If option == OPTION_PERKS_REMOVE_BREAKPOINT
+
+        Int count = UncapperMCM.GetPerksAtLevelUpBreakpointCount()
+
+        If count <= 1
+            Return
+        EndIf
+
+        String[] options = Utility.CreateStringArray(count - 1)
+
+        Int i = 1
+
+        While i < count
+
+            Int level = UncapperMCM.GetPerksAtLevelUpBreakpointLevel(i)
+
+            options[i - 1] = "Level " + level
+
+            i += 1
+
+        EndWhile
+
+        SetMenuDialogOptions(options)
+        SetMenuDialogStartIndex(0)
+        SetMenuDialogDefaultIndex(0)
+
+        Return
+
+    EndIf
+
 EndEvent
 
 
@@ -997,6 +1132,20 @@ Event OnOptionMenuAccept(Int option, Int index)
 
     EndIf
 
+    If option == OPTION_PERKS_REMOVE_BREAKPOINT
+
+        Bool removed = UncapperMCM.RemovePerksAtLevelUpBreakpoint(index + 1)
+
+        If removed
+            ForcePageReset()
+        Else
+            ShowMessage("Unable to remove this breakpoint. The level 0 breakpoint is required.", false)
+        EndIf
+
+        Return
+
+    EndIf
+
 EndEvent
 
 
@@ -1068,8 +1217,8 @@ Event OnOptionSliderOpen(Int option)
     If option == OPTION_XP_NEW_BREAKPOINT_LEVEL
 
         SetSliderDialogStartValue(NEW_XP_BREAKPOINT_LEVEL)
-        SetSliderDialogDefaultValue(0.0)
-        SetSliderDialogRange(0.0, 500.0)
+        SetSliderDialogDefaultValue(1.0)
+        SetSliderDialogRange(1.0, 500.0)
         SetSliderDialogInterval(1.0)
 
         Return
@@ -1114,7 +1263,7 @@ Event OnOptionSliderOpen(Int option)
         SetSliderDialogStartValue(HundredthsToFloat(baseMult))
         SetSliderDialogDefaultValue(1.0)
         SetSliderDialogRange(0.0, 100.0)
-        SetSliderDialogInterval(0.01)
+        SetSliderDialogInterval(1)
 
         Return
 
@@ -1206,6 +1355,50 @@ Event OnOptionSliderOpen(Int option)
         EndIf
 
         SetSliderDialogStartValue(HundredthsToFloat(multiplier))
+        SetSliderDialogDefaultValue(1.0)
+        SetSliderDialogRange(0.0, 100.0)
+        SetSliderDialogInterval(0.01)
+
+        Return
+
+    EndIf
+
+
+    If option == OPTION_PERKS_NEW_BREAKPOINT_LEVEL
+
+        SetSliderDialogStartValue(NEW_PERKS_BREAKPOINT_LEVEL)
+        SetSliderDialogDefaultValue(0.0)
+        SetSliderDialogRange(0.0, 500.0)
+        SetSliderDialogInterval(1.0)
+
+        Return
+
+    EndIf
+
+
+    breakpointIndex = FindPerksBreakpointLevelOption(option)
+
+    If breakpointIndex >= 0
+
+        Int perkLevel = UncapperMCM.GetPerksAtLevelUpBreakpointLevel(breakpointIndex)
+
+        SetSliderDialogStartValue(perkLevel)
+        SetSliderDialogDefaultValue(perkLevel)
+        SetSliderDialogRange(0.0, 500.0)
+        SetSliderDialogInterval(1.0)
+
+        Return
+
+    EndIf
+
+
+    breakpointIndex = FindPerksBreakpointValueOption(option)
+
+    If breakpointIndex >= 0
+
+        Int perkValue = UncapperMCM.GetPerksAtLevelUpBreakpointValue(breakpointIndex)
+
+        SetSliderDialogStartValue(HundredthsToFloat(perkValue))
         SetSliderDialogDefaultValue(1.0)
         SetSliderDialogRange(0.0, 100.0)
         SetSliderDialogInterval(0.01)
@@ -1459,6 +1652,49 @@ Event OnOptionSliderAccept(Int option, Float value)
         Return
 
     EndIf
+
+    If option == OPTION_PERKS_NEW_BREAKPOINT_LEVEL
+
+        NEW_PERKS_BREAKPOINT_LEVEL = newValue
+        SetSliderOptionValue(option, newValue, "{0}")
+
+        Return
+
+    EndIf
+
+
+    breakpointIndex = FindPerksBreakpointLevelOption(option)
+
+    If breakpointIndex >= 0
+
+        Int currentPerkValue = UncapperMCM.GetPerksAtLevelUpBreakpointValue(breakpointIndex)
+
+        If UncapperMCM.SetPerksAtLevelUpBreakpoint(breakpointIndex, newValue, currentPerkValue)
+            ForcePageReset()
+        Else
+            ShowMessage("Unable to change this breakpoint level. Level 0 is required and another breakpoint may already use that level.", false)
+        EndIf
+
+        Return
+
+    EndIf
+
+
+    breakpointIndex = FindPerksBreakpointValueOption(option)
+
+    If breakpointIndex >= 0
+
+        Int perkHundredths = FloatToHundredths(value)
+        Int perkLevel = UncapperMCM.GetPerksAtLevelUpBreakpointLevel(breakpointIndex)
+
+        If UncapperMCM.SetPerksAtLevelUpBreakpoint(breakpointIndex, perkLevel, perkHundredths)
+            SetSliderOptionValue(option, HundredthsToFloat(perkHundredths), "{1}")
+        EndIf
+
+        Return
+
+    EndIf
+
 
     Int skillIndex = FindSkillCapOption(option)
 
@@ -1724,6 +1960,51 @@ Event OnOptionHighlight(Int option)
     EndIf
 
 
+    If option == OPTION_PERKS_NEW_BREAKPOINT_LEVEL
+
+        SetInfoText("Choose the player level where a new perk-award breakpoint should begin. Any integer level from 0 to 500 can be used.")
+
+        Return
+
+    EndIf
+
+
+    If option == OPTION_PERKS_ADD_BREAKPOINT
+
+        SetInfoText("Add a new Perks at Level Up breakpoint. New breakpoints start at 1.00 perk per level and can be edited below.")
+
+        Return
+
+    EndIf
+
+
+    If option == OPTION_PERKS_REMOVE_BREAKPOINT
+
+        SetInfoText("Remove one Perks at Level Up breakpoint. The level 0 breakpoint is required and cannot be removed.")
+
+        Return
+
+    EndIf
+
+
+    If FindPerksBreakpointLevelOption(option) >= 0
+
+        SetInfoText("Player level where this perk-award breakpoint begins. The level 0 breakpoint is required and cannot be moved.")
+
+        Return
+
+    EndIf
+
+
+    If FindPerksBreakpointValueOption(option) >= 0
+
+        SetInfoText("Average perks awarded per player level from this breakpoint onward. Fractional values accumulate across levels; for example 1.50 produces 1, then 2, then 1, then 2 perks.")
+
+        Return
+
+    EndIf
+
+
     If FindSkillCapOption(option) >= 0
 
         SetInfoText("Maximum level this skill can actually reach. For example, a Skill Cap of 150 allows the skill to increase up to 150, but not beyond it. Values above 400 are experimental; the hard limit is 500.")
@@ -1919,6 +2200,56 @@ Int Function FindPlayerXpBreakpointMultiplierOption(Int option)
     Return -1
 
 EndFunction
+; ============================================================================
+; Perks at Level Up helpers
+; ============================================================================
+
+Int Function FindPerksBreakpointLevelOption(Int option)
+
+    If OPTION_PERKS_BREAKPOINT_LEVELS == None
+        Return -1
+    EndIf
+
+    Int i = 0
+
+    While i < ACTIVE_PERKS_BREAKPOINT_COUNT
+
+        If OPTION_PERKS_BREAKPOINT_LEVELS[i] == option
+            Return i
+        EndIf
+
+        i += 1
+
+    EndWhile
+
+    Return -1
+
+EndFunction
+
+
+Int Function FindPerksBreakpointValueOption(Int option)
+
+    If OPTION_PERKS_BREAKPOINT_VALUES == None
+        Return -1
+    EndIf
+
+    Int i = 0
+
+    While i < ACTIVE_PERKS_BREAKPOINT_COUNT
+
+        If OPTION_PERKS_BREAKPOINT_VALUES[i] == option
+            Return i
+        EndIf
+
+        i += 1
+
+    EndWhile
+
+    Return -1
+
+EndFunction
+
+
 ; ============================================================================
 ; Bulk selection helpers
 ; ============================================================================

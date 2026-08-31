@@ -54,4 +54,21 @@ Bool Function AddPlayerLevelExpBreakpoint(Int skillSlot, Bool characterLevel, In
 Bool Function RemovePlayerLevelExpBreakpoint(Int skillSlot, Bool characterLevel, Int index) Global Native
 
 
+; ---------------------------------------------------------------------------
+; Perks at Level Up
+; ---------------------------------------------------------------------------
+
+Int Function GetPerksAtLevelUpBreakpointCount() Global Native
+Int Function GetPerksAtLevelUpBreakpointLevel(Int index) Global Native
+Int Function GetPerksAtLevelUpBreakpointValue(Int index) Global Native
+
+Bool Function SetPerksAtLevelUpBreakpoint(Int index, Int level, Int valueHundredths) Global Native
+Bool Function AddPerksAtLevelUpBreakpoint(Int level, Int valueHundredths) Global Native
+Bool Function RemovePerksAtLevelUpBreakpoint(Int index) Global Native
+
+
+; ---------------------------------------------------------------------------
+; General
+; ---------------------------------------------------------------------------
+
 Bool Function ClearOverrides() Global Native

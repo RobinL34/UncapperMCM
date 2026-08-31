@@ -123,6 +123,30 @@ namespace
             std::uint32_t skillSlot,
             std::uint32_t count);
 
+    // ---------------------------------------------------------------------
+    // Perks at level up function types
+    // ---------------------------------------------------------------------
+
+    using GetIniPerksAtLevelUpBreakpointCountFn =
+        std::uint32_t(__stdcall *)();
+
+    using GetIniPerksAtLevelUpBreakpointValueFn =
+        std::uint32_t(__stdcall *)(
+            std::uint32_t index);
+
+    using BeginPerksAtLevelUpOverrideFn =
+        bool(__stdcall *)();
+
+    using SetPerksAtLevelUpBreakpointFn =
+        bool(__stdcall *)(
+            std::uint32_t index,
+            std::uint32_t level,
+            std::uint32_t perkHundredths);
+
+    using CommitPerksAtLevelUpOverrideFn =
+        bool(__stdcall *)(
+            std::uint32_t count);
+
     HMODULE GetUncapperModule()
     {
         return ::GetModuleHandleA(
@@ -1001,5 +1025,120 @@ namespace UncapperAPI
         return fn(
             skillSlot,
             count);
+    }
+
+    // ---------------------------------------------------------------------
+    // Perks at level up
+    // ---------------------------------------------------------------------
+
+    std::uint32_t GetIniPerksAtLevelUpBreakpointCount()
+    {
+        const auto getter =
+            GetUncapperFunction<GetIniPerksAtLevelUpBreakpointCountFn>(
+                "Uncapper_GetIniPerksAtLevelUpBreakpointCount");
+
+        if (!getter)
+        {
+            SKSE::log::error(
+                "Uncapper_GetIniPerksAtLevelUpBreakpointCount was not found.");
+
+            return UINT32_MAX;
+        }
+
+        return getter();
+    }
+
+    std::uint32_t GetIniPerksAtLevelUpBreakpointLevel(
+        std::uint32_t index)
+    {
+        const auto getter =
+            GetUncapperFunction<GetIniPerksAtLevelUpBreakpointValueFn>(
+                "Uncapper_GetIniPerksAtLevelUpBreakpointLevel");
+
+        if (!getter)
+        {
+            SKSE::log::error(
+                "Uncapper_GetIniPerksAtLevelUpBreakpointLevel was not found.");
+
+            return UINT32_MAX;
+        }
+
+        return getter(index);
+    }
+
+    std::uint32_t GetIniPerksAtLevelUpBreakpointValue(
+        std::uint32_t index)
+    {
+        const auto getter =
+            GetUncapperFunction<GetIniPerksAtLevelUpBreakpointValueFn>(
+                "Uncapper_GetIniPerksAtLevelUpBreakpointValue");
+
+        if (!getter)
+        {
+            SKSE::log::error(
+                "Uncapper_GetIniPerksAtLevelUpBreakpointValue was not found.");
+
+            return UINT32_MAX;
+        }
+
+        return getter(index);
+    }
+
+    bool BeginPerksAtLevelUpOverride()
+    {
+        const auto fn =
+            GetUncapperFunction<BeginPerksAtLevelUpOverrideFn>(
+                "Uncapper_BeginPerksAtLevelUpOverride");
+
+        if (!fn)
+        {
+            SKSE::log::error(
+                "Uncapper_BeginPerksAtLevelUpOverride was not found.");
+
+            return false;
+        }
+
+        return fn();
+    }
+
+    bool SetPerksAtLevelUpBreakpoint(
+        std::uint32_t index,
+        std::uint32_t level,
+        std::uint32_t perkHundredths)
+    {
+        const auto fn =
+            GetUncapperFunction<SetPerksAtLevelUpBreakpointFn>(
+                "Uncapper_SetPerksAtLevelUpBreakpoint");
+
+        if (!fn)
+        {
+            SKSE::log::error(
+                "Uncapper_SetPerksAtLevelUpBreakpoint was not found.");
+
+            return false;
+        }
+
+        return fn(
+            index,
+            level,
+            perkHundredths);
+    }
+
+    bool CommitPerksAtLevelUpOverride(
+        std::uint32_t count)
+    {
+        const auto fn =
+            GetUncapperFunction<CommitPerksAtLevelUpOverrideFn>(
+                "Uncapper_CommitPerksAtLevelUpOverride");
+
+        if (!fn)
+        {
+            SKSE::log::error(
+                "Uncapper_CommitPerksAtLevelUpOverride was not found.");
+
+            return false;
+        }
+
+        return fn(count);
     }
 }

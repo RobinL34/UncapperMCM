@@ -29,10 +29,11 @@ namespace
                 Settings::MAX_SKILL_EXP_BREAKPOINTS)
         {
             return false;
-            if (breakpoints.front().level != 0)
-{
-    return false;
-}
+        }
+
+        if (breakpoints.front().level != 0)
+        {
+            return false;
         }
 
         std::uint32_t previousLevel = 0;
@@ -82,6 +83,11 @@ namespace
             breakpoints.empty() ||
             breakpoints.size() >
                 Settings::MAX_LEVEL_EXP_BREAKPOINTS)
+        {
+            return false;
+        }
+
+        if (breakpoints.front().level != 0)
         {
             return false;
         }
@@ -488,6 +494,124 @@ namespace
                                  breakpoints.size()));
     }
 
+    bool LoadPerksAtLevelUpFromIni(
+        std::vector<Settings::MultiplierBreakpoint> &output)
+    {
+        const auto count =
+            UncapperAPI::
+                GetIniPerksAtLevelUpBreakpointCount();
+
+        if (
+            count == UINT32_MAX ||
+            count == 0 ||
+            count >
+                Settings::MAX_PERKS_AT_LEVEL_UP_BREAKPOINTS)
+        {
+            SKSE::log::error(
+                "Invalid PerksAtLevelUp breakpoint count {}.",
+                count);
+
+            return false;
+        }
+
+        std::vector<Settings::MultiplierBreakpoint>
+            breakpoints;
+
+        breakpoints.reserve(count);
+
+        for (
+            std::uint32_t index = 0;
+            index < count;
+            ++index)
+        {
+            const auto level =
+                UncapperAPI::
+                    GetIniPerksAtLevelUpBreakpointLevel(
+                        index);
+
+            const auto value =
+                UncapperAPI::
+                    GetIniPerksAtLevelUpBreakpointValue(
+                        index);
+
+            if (
+                level == UINT32_MAX ||
+                value == UINT32_MAX)
+            {
+                SKSE::log::error(
+                    "Failed to read PerksAtLevelUp breakpoint {}.",
+                    index);
+
+                return false;
+            }
+
+            breakpoints.push_back(
+                Settings::MultiplierBreakpoint{
+                    level,
+                    value});
+        }
+
+        if (
+            !ValidateMultiplierBreakpoints(
+                breakpoints))
+        {
+            SKSE::log::error(
+                "Invalid PerksAtLevelUp breakpoint table "
+                "loaded from SkyrimUncapper.ini.");
+
+            return false;
+        }
+
+        output =
+            std::move(breakpoints);
+
+        return true;
+    }
+
+    bool ApplyPerksAtLevelUpBreakpointTable(
+        const std::vector<Settings::MultiplierBreakpoint> &breakpoints)
+    {
+        if (
+            breakpoints.size() >
+                Settings::MAX_PERKS_AT_LEVEL_UP_BREAKPOINTS ||
+            !ValidateMultiplierBreakpoints(
+                breakpoints))
+        {
+            return false;
+        }
+
+        if (
+            !UncapperAPI::
+                BeginPerksAtLevelUpOverride())
+        {
+            return false;
+        }
+
+        for (
+            std::size_t i = 0;
+            i < breakpoints.size();
+            ++i)
+        {
+            const auto &breakpoint =
+                breakpoints[i];
+
+            if (
+                !UncapperAPI::
+                    SetPerksAtLevelUpBreakpoint(
+                        static_cast<std::uint32_t>(i),
+                        breakpoint.level,
+                        breakpoint.multiplierHundredths))
+            {
+                return false;
+            }
+        }
+
+        return UncapperAPI::
+            CommitPerksAtLevelUpOverride(
+                static_cast<std::uint32_t>(
+                    breakpoints.size()));
+    }
+
 }
 
 namespace Settings
@@ -644,6 +768,13 @@ namespace Settings
             }
         }
 
+        if (
+            !LoadPerksAtLevelUpFromIni(
+                g_settings.perksAtLevelUp))
+        {
+            return false;
+        }
+
         const auto magnitudeCap =
             UncapperAPI::
                 GetIniEnchantMagnitudeCap();
@@ -681,7 +812,8 @@ namespace Settings
 
         SKSE::log::info(
             "Skill caps, formula caps, Enchanting "
-            "Skill XP and Player Level XP settings loaded"
+            "Skill XP, Player Level XP and PerksAtLevelUp "
+            "settings loaded "
             "from SkyrimUncapper.ini.");
 
         return true;
@@ -1260,6 +1392,41 @@ namespace Settings
     }
 
     // ---------------------------------------------------------------------
+    // Perks at level up
+    // ---------------------------------------------------------------------
+
+    const std::vector<MultiplierBreakpoint> &
+    GetPerksAtLevelUpBreakpoints()
+    {
+        return g_settings
+            .perksAtLevelUp;
+    }
+
+    bool SetPerksAtLevelUpBreakpoints(
+        const std::vector<MultiplierBreakpoint> &breakpoints)
+    {
+        if (
+            breakpoints.size() >
+                MAX_PERKS_AT_LEVEL_UP_BREAKPOINTS ||
+            !ValidateMultiplierBreakpoints(
+                breakpoints))
+        {
+            return false;
+        }
+
+        g_settings.perksAtLevelUp =
+            breakpoints;
+
+        if (!g_settings.enabled)
+        {
+            return true;
+        }
+
+        return ApplyPerksAtLevelUpBreakpointTable(
+            breakpoints);
+    }
+
+    // ---------------------------------------------------------------------
     // Apply
     // ---------------------------------------------------------------------
 
@@ -1286,6 +1453,15 @@ namespace Settings
                 "remains in control.");
 
             return result;
+        }
+
+        if (
+            g_settings.perksAtLevelUp.size() >
+                MAX_PERKS_AT_LEVEL_UP_BREAKPOINTS ||
+            !ValidateMultiplierBreakpoints(
+                g_settings.perksAtLevelUp))
+        {
+            return false;
         }
 
         for (
@@ -1461,6 +1637,16 @@ namespace Settings
             }
         }
 
+        if (
+            !ApplyPerksAtLevelUpBreakpointTable(
+                g_settings.perksAtLevelUp))
+        {
+            SKSE::log::error(
+                "Failed to apply PerksAtLevelUp breakpoints.");
+
+            return false;
+        }
+
         const auto magnitudeCap =
             g_settings
                 .enchanting
@@ -1513,9 +1699,9 @@ namespace Settings
         }
 
         SKSE::log::info(
-    "Skill caps, formula caps, Enchanting, "
-    "Skill XP and Player Level XP settings loaded "
-    "from SkyrimUncapper.ini.");
+            "Skill caps, formula caps, Enchanting, "
+            "Skill XP, Player Level XP and PerksAtLevelUp "
+            "settings applied.");
 
         return true;
     }
