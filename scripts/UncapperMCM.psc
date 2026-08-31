@@ -68,6 +68,21 @@ Bool Function RemovePerksAtLevelUpBreakpoint(Int index) Global Native
 
 
 ; ---------------------------------------------------------------------------
+; Attributes at Level Up
+; ---------------------------------------------------------------------------
+
+Bool Function GetIniUseAttributesAtLevelUp() Global Native
+
+Int Function GetAttributeBreakpointCount(Int tableIndex) Global Native
+Int Function GetAttributeBreakpointLevel(Int tableIndex, Int index) Global Native
+Int Function GetAttributeBreakpointValue(Int tableIndex, Int index) Global Native
+
+Bool Function SetAttributeBreakpoint(Int tableIndex, Int index, Int level, Int value) Global Native
+Bool Function AddAttributeBreakpoint(Int tableIndex, Int level, Int value) Global Native
+Bool Function RemoveAttributeBreakpoint(Int tableIndex, Int index) Global Native
+
+
+; ---------------------------------------------------------------------------
 ; General
 ; ---------------------------------------------------------------------------
 

@@ -106,6 +106,30 @@ Int ACTIVE_PERKS_BREAKPOINT_COUNT = 0
 Int NEW_PERKS_BREAKPOINT_LEVEL = 1
 
 
+; ============================================================================
+; Attributes at Level Up
+; ============================================================================
+
+String[] ATTRIBUTE_CHOICE_NAMES
+String[] ATTRIBUTE_TARGET_NAMES
+
+Int SELECTED_ATTRIBUTE_CHOICE = 0
+Int SELECTED_ATTRIBUTE_TARGET = 0
+
+Int OPTION_ATTRIBUTE_CHOICE_SELECTOR
+Int OPTION_ATTRIBUTE_TARGET_SELECTOR
+
+Int OPTION_ATTRIBUTE_NEW_BREAKPOINT_LEVEL
+Int OPTION_ATTRIBUTE_ADD_BREAKPOINT
+Int OPTION_ATTRIBUTE_REMOVE_BREAKPOINT
+
+Int[] OPTION_ATTRIBUTE_BREAKPOINT_LEVELS
+Int[] OPTION_ATTRIBUTE_BREAKPOINT_VALUES
+
+Int ACTIVE_ATTRIBUTE_BREAKPOINT_COUNT = 0
+Int NEW_ATTRIBUTE_BREAKPOINT_LEVEL = 1
+
+
 String CURRENT_PAGE = ""
 
 
@@ -115,7 +139,7 @@ String CURRENT_PAGE = ""
 
 Int Function GetVersion()
 
-    Return 9
+    Return 10
 
 EndFunction
 
@@ -170,6 +194,20 @@ Function InitializeMenuData()
     OPTION_PERKS_BREAKPOINT_LEVELS = new Int[32]
     OPTION_PERKS_BREAKPOINT_VALUES = new Int[32]
 
+    ATTRIBUTE_CHOICE_NAMES = new String[3]
+    ATTRIBUTE_CHOICE_NAMES[0] = "Health"
+    ATTRIBUTE_CHOICE_NAMES[1] = "Magicka"
+    ATTRIBUTE_CHOICE_NAMES[2] = "Stamina"
+
+    ATTRIBUTE_TARGET_NAMES = new String[4]
+    ATTRIBUTE_TARGET_NAMES[0] = "Health"
+    ATTRIBUTE_TARGET_NAMES[1] = "Magicka"
+    ATTRIBUTE_TARGET_NAMES[2] = "Stamina"
+    ATTRIBUTE_TARGET_NAMES[3] = "Carry Weight"
+
+    OPTION_ATTRIBUTE_BREAKPOINT_LEVELS = new Int[32]
+    OPTION_ATTRIBUTE_BREAKPOINT_VALUES = new Int[32]
+
     BULK_XP_SKILL_LEVELS = new Int[32]
     BULK_XP_SKILL_BASES = new Int[32]
     BULK_XP_SKILL_OFFSETS = new Int[32]
@@ -198,7 +236,7 @@ Function InitializeMenuData()
     BULK_PLAYER_XP_CHARACTER_LEVELS[0] = 0
     BULK_PLAYER_XP_CHARACTER_MULTIPLIERS[0] = 100
 
-    Pages = new String[11]
+    Pages = new String[12]
 
     Pages[0] = "General"
     Pages[1] = "Skill Caps"
@@ -211,6 +249,7 @@ Function InitializeMenuData()
     Pages[8] = "Player XP by Skill Level"
     Pages[9] = "Player XP by Character Level"
     Pages[10] = "Perks at Level Up"
+    Pages[11] = "Attributes at Level Up"
 
 EndFunction
 
@@ -226,7 +265,7 @@ EndEvent
 
 Event OnVersionUpdate(Int newVersion)
 
-    If newVersion >= 9
+    If newVersion >= 10
 
         ModName = "Uncapper MCM"
 
@@ -450,6 +489,11 @@ Event OnPageReset(String page)
     ElseIf page == "Perks at Level Up"
 
         DrawPerksAtLevelUpPage(enabled)
+
+
+    ElseIf page == "Attributes at Level Up"
+
+        DrawAttributesAtLevelUpPage(enabled)
 
     EndIf
 
@@ -722,6 +766,87 @@ EndFunction
 
 
 ; ============================================================================
+; Draw Attributes at Level Up page
+; ============================================================================
+
+Function DrawAttributesAtLevelUpPage(Bool enabled)
+
+    SetCursorFillMode(TOP_TO_BOTTOM)
+
+    Bool hookEnabled = UncapperMCM.GetIniUseAttributesAtLevelUp()
+
+    Int flags = OPTION_FLAG_NONE
+
+    If !enabled || !hookEnabled
+        flags = OPTION_FLAG_DISABLED
+    EndIf
+
+    AddHeaderOption("Attributes at Level Up")
+
+    If hookEnabled
+        AddTextOption("Runtime Hook", "Enabled in INI")
+    Else
+        AddTextOption("Runtime Hook", "Disabled in INI", OPTION_FLAG_DISABLED)
+    EndIf
+
+    AddEmptyOption()
+
+    AddHeaderOption("Attribute Gain")
+
+    OPTION_ATTRIBUTE_CHOICE_SELECTOR = AddMenuOption("When Choosing", ATTRIBUTE_CHOICE_NAMES[SELECTED_ATTRIBUTE_CHOICE], flags)
+
+    OPTION_ATTRIBUTE_TARGET_SELECTOR = AddMenuOption("Attribute Gained", ATTRIBUTE_TARGET_NAMES[SELECTED_ATTRIBUTE_TARGET], flags)
+
+    AddEmptyOption()
+
+    AddHeaderOption("Add / Remove Breakpoint")
+
+    OPTION_ATTRIBUTE_NEW_BREAKPOINT_LEVEL = AddSliderOption("New Breakpoint Level", NEW_ATTRIBUTE_BREAKPOINT_LEVEL, "{0}", flags)
+
+    OPTION_ATTRIBUTE_ADD_BREAKPOINT = AddTextOption("Add Breakpoint", "Add", flags)
+
+    Int tableIndex = GetSelectedAttributeTableIndex()
+    Int count = UncapperMCM.GetAttributeBreakpointCount(tableIndex)
+
+    ACTIVE_ATTRIBUTE_BREAKPOINT_COUNT = count
+
+    Int removeFlags = flags
+
+    If count <= 1
+        removeFlags = OPTION_FLAG_DISABLED
+    EndIf
+
+    OPTION_ATTRIBUTE_REMOVE_BREAKPOINT = AddMenuOption("Remove Breakpoint", "Choose...", removeFlags)
+
+    AddEmptyOption()
+
+    AddHeaderOption("Breakpoints")
+
+    Int i = 0
+
+    While i < count
+
+        Int level = UncapperMCM.GetAttributeBreakpointLevel(tableIndex, i)
+        Int attributeValue = UncapperMCM.GetAttributeBreakpointValue(tableIndex, i)
+
+        Int levelFlags = flags
+
+        If i == 0
+            levelFlags = OPTION_FLAG_DISABLED
+        EndIf
+
+        OPTION_ATTRIBUTE_BREAKPOINT_LEVELS[i] = AddSliderOption("Breakpoint " + (i + 1) + " Level", level, "{0}", levelFlags)
+
+        OPTION_ATTRIBUTE_BREAKPOINT_VALUES[i] = AddSliderOption("Gain @ Level " + level, attributeValue, "{0}", flags)
+
+        i += 1
+
+    EndWhile
+
+EndFunction
+
+
+; ============================================================================
 ; Select options
 ; ============================================================================
 
@@ -814,6 +939,24 @@ Event OnOptionSelect(Int option)
             ForcePageReset()
         Else
             ShowMessage("Unable to add this breakpoint. The level may already exist, be outside 0-500, or the table may already contain 32 breakpoints.", false)
+        EndIf
+
+        Return
+
+    EndIf
+
+
+    If option == OPTION_ATTRIBUTE_ADD_BREAKPOINT
+
+        Int tableIndex = GetSelectedAttributeTableIndex()
+        Int defaultValue = GetAttributeValueForNewBreakpoint(tableIndex, NEW_ATTRIBUTE_BREAKPOINT_LEVEL)
+
+        Bool added = UncapperMCM.AddAttributeBreakpoint(tableIndex, NEW_ATTRIBUTE_BREAKPOINT_LEVEL, defaultValue)
+
+        If added
+            ForcePageReset()
+        Else
+            ShowMessage("Unable to add this breakpoint. The level may already exist, be outside 1-500, or the table may already contain 32 breakpoints.", false)
         EndIf
 
         Return
@@ -1035,6 +1178,59 @@ Event OnOptionMenuOpen(Int option)
 
     EndIf
 
+    If option == OPTION_ATTRIBUTE_CHOICE_SELECTOR
+
+        SetMenuDialogOptions(ATTRIBUTE_CHOICE_NAMES)
+        SetMenuDialogStartIndex(SELECTED_ATTRIBUTE_CHOICE)
+        SetMenuDialogDefaultIndex(0)
+
+        Return
+
+    EndIf
+
+
+    If option == OPTION_ATTRIBUTE_TARGET_SELECTOR
+
+        SetMenuDialogOptions(ATTRIBUTE_TARGET_NAMES)
+        SetMenuDialogStartIndex(SELECTED_ATTRIBUTE_TARGET)
+        SetMenuDialogDefaultIndex(0)
+
+        Return
+
+    EndIf
+
+
+    If option == OPTION_ATTRIBUTE_REMOVE_BREAKPOINT
+
+        Int tableIndex = GetSelectedAttributeTableIndex()
+        Int count = UncapperMCM.GetAttributeBreakpointCount(tableIndex)
+
+        If count <= 1
+            Return
+        EndIf
+
+        String[] options = Utility.CreateStringArray(count - 1)
+
+        Int i = 1
+
+        While i < count
+
+            Int level = UncapperMCM.GetAttributeBreakpointLevel(tableIndex, i)
+
+            options[i - 1] = "Level " + level
+
+            i += 1
+
+        EndWhile
+
+        SetMenuDialogOptions(options)
+        SetMenuDialogStartIndex(0)
+        SetMenuDialogDefaultIndex(0)
+
+        Return
+
+    EndIf
+
 EndEvent
 
 
@@ -1135,6 +1331,48 @@ Event OnOptionMenuAccept(Int option, Int index)
     If option == OPTION_PERKS_REMOVE_BREAKPOINT
 
         Bool removed = UncapperMCM.RemovePerksAtLevelUpBreakpoint(index + 1)
+
+        If removed
+            ForcePageReset()
+        Else
+            ShowMessage("Unable to remove this breakpoint. The level 0 breakpoint is required.", false)
+        EndIf
+
+        Return
+
+    EndIf
+
+    If option == OPTION_ATTRIBUTE_CHOICE_SELECTOR
+
+        If index >= 0 && index < 3
+            SELECTED_ATTRIBUTE_CHOICE = index
+            SetMenuOptionValue(option, ATTRIBUTE_CHOICE_NAMES[index])
+            ForcePageReset()
+        EndIf
+
+        Return
+
+    EndIf
+
+
+    If option == OPTION_ATTRIBUTE_TARGET_SELECTOR
+
+        If index >= 0 && index < 4
+            SELECTED_ATTRIBUTE_TARGET = index
+            SetMenuOptionValue(option, ATTRIBUTE_TARGET_NAMES[index])
+            ForcePageReset()
+        EndIf
+
+        Return
+
+    EndIf
+
+
+    If option == OPTION_ATTRIBUTE_REMOVE_BREAKPOINT
+
+        Int tableIndex = GetSelectedAttributeTableIndex()
+
+        Bool removed = UncapperMCM.RemoveAttributeBreakpoint(tableIndex, index + 1)
 
         If removed
             ForcePageReset()
@@ -1263,7 +1501,7 @@ Event OnOptionSliderOpen(Int option)
         SetSliderDialogStartValue(HundredthsToFloat(baseMult))
         SetSliderDialogDefaultValue(1.0)
         SetSliderDialogRange(0.0, 100.0)
-        SetSliderDialogInterval(1)
+        SetSliderDialogInterval(0.01)
 
         Return
 
@@ -1367,8 +1605,8 @@ Event OnOptionSliderOpen(Int option)
     If option == OPTION_PERKS_NEW_BREAKPOINT_LEVEL
 
         SetSliderDialogStartValue(NEW_PERKS_BREAKPOINT_LEVEL)
-        SetSliderDialogDefaultValue(0.0)
-        SetSliderDialogRange(0.0, 500.0)
+        SetSliderDialogDefaultValue(1.0)
+        SetSliderDialogRange(1.0, 500.0)
         SetSliderDialogInterval(1.0)
 
         Return
@@ -1401,7 +1639,53 @@ Event OnOptionSliderOpen(Int option)
         SetSliderDialogStartValue(HundredthsToFloat(perkValue))
         SetSliderDialogDefaultValue(1.0)
         SetSliderDialogRange(0.0, 100.0)
-        SetSliderDialogInterval(0.01)
+        SetSliderDialogInterval(0.5)
+
+        Return
+
+    EndIf
+
+
+    If option == OPTION_ATTRIBUTE_NEW_BREAKPOINT_LEVEL
+
+        SetSliderDialogStartValue(NEW_ATTRIBUTE_BREAKPOINT_LEVEL)
+        SetSliderDialogDefaultValue(1.0)
+        SetSliderDialogRange(1.0, 500.0)
+        SetSliderDialogInterval(1.0)
+
+        Return
+
+    EndIf
+
+
+    breakpointIndex = FindAttributeBreakpointLevelOption(option)
+
+    If breakpointIndex >= 0
+
+        Int tableIndex = GetSelectedAttributeTableIndex()
+        Int attributeLevel = UncapperMCM.GetAttributeBreakpointLevel(tableIndex, breakpointIndex)
+
+        SetSliderDialogStartValue(attributeLevel)
+        SetSliderDialogDefaultValue(attributeLevel)
+        SetSliderDialogRange(0.0, 500.0)
+        SetSliderDialogInterval(1.0)
+
+        Return
+
+    EndIf
+
+
+    breakpointIndex = FindAttributeBreakpointValueOption(option)
+
+    If breakpointIndex >= 0
+
+        Int tableIndex = GetSelectedAttributeTableIndex()
+        Int attributeValue = UncapperMCM.GetAttributeBreakpointValue(tableIndex, breakpointIndex)
+
+        SetSliderDialogStartValue(attributeValue)
+        SetSliderDialogDefaultValue(attributeValue)
+        SetSliderDialogRange(0.0, 100.0)
+        SetSliderDialogInterval(1.0)
 
         Return
 
@@ -1689,6 +1973,50 @@ Event OnOptionSliderAccept(Int option, Float value)
 
         If UncapperMCM.SetPerksAtLevelUpBreakpoint(breakpointIndex, perkLevel, perkHundredths)
             SetSliderOptionValue(option, HundredthsToFloat(perkHundredths), "{1}")
+        EndIf
+
+        Return
+
+    EndIf
+
+
+    If option == OPTION_ATTRIBUTE_NEW_BREAKPOINT_LEVEL
+
+        NEW_ATTRIBUTE_BREAKPOINT_LEVEL = newValue
+        SetSliderOptionValue(option, newValue, "{0}")
+
+        Return
+
+    EndIf
+
+
+    breakpointIndex = FindAttributeBreakpointLevelOption(option)
+
+    If breakpointIndex >= 0
+
+        Int tableIndex = GetSelectedAttributeTableIndex()
+        Int currentAttributeValue = UncapperMCM.GetAttributeBreakpointValue(tableIndex, breakpointIndex)
+
+        If UncapperMCM.SetAttributeBreakpoint(tableIndex, breakpointIndex, newValue, currentAttributeValue)
+            ForcePageReset()
+        Else
+            ShowMessage("Unable to change this breakpoint level. Level 0 is required and another breakpoint may already use that level.", false)
+        EndIf
+
+        Return
+
+    EndIf
+
+
+    breakpointIndex = FindAttributeBreakpointValueOption(option)
+
+    If breakpointIndex >= 0
+
+        Int tableIndex = GetSelectedAttributeTableIndex()
+        Int attributeLevel = UncapperMCM.GetAttributeBreakpointLevel(tableIndex, breakpointIndex)
+
+        If UncapperMCM.SetAttributeBreakpoint(tableIndex, breakpointIndex, attributeLevel, newValue)
+            SetSliderOptionValue(option, newValue, "{0}")
         EndIf
 
         Return
@@ -2005,6 +2333,69 @@ Event OnOptionHighlight(Int option)
     EndIf
 
 
+    If option == OPTION_ATTRIBUTE_CHOICE_SELECTOR
+
+        SetInfoText("Select which attribute the player chooses on the level-up screen: Health, Magicka or Stamina.")
+
+        Return
+
+    EndIf
+
+
+    If option == OPTION_ATTRIBUTE_TARGET_SELECTOR
+
+        SetInfoText("Select which actor value receives the configured gain when the chosen level-up attribute is selected.")
+
+        Return
+
+    EndIf
+
+
+    If option == OPTION_ATTRIBUTE_NEW_BREAKPOINT_LEVEL
+
+        SetInfoText("Choose the player level where a new attribute-gain breakpoint begins. New breakpoints can be added from level 1 to 500.")
+
+        Return
+
+    EndIf
+
+
+    If option == OPTION_ATTRIBUTE_ADD_BREAKPOINT
+
+        SetInfoText("Add a new breakpoint for the selected choice and gained attribute. The new breakpoint inherits the value active immediately before it.")
+
+        Return
+
+    EndIf
+
+
+    If option == OPTION_ATTRIBUTE_REMOVE_BREAKPOINT
+
+        SetInfoText("Remove one breakpoint from the selected attribute table. The level 0 breakpoint is required and cannot be removed.")
+
+        Return
+
+    EndIf
+
+
+    If FindAttributeBreakpointLevelOption(option) >= 0
+
+        SetInfoText("Player level where this attribute-gain breakpoint begins. The level 0 breakpoint is required and cannot be moved.")
+
+        Return
+
+    EndIf
+
+
+    If FindAttributeBreakpointValueOption(option) >= 0
+
+        SetInfoText("Amount added to the selected actor value at level-up. Values are whole points from 0 to 100 and remain active until the next breakpoint.")
+
+        Return
+
+    EndIf
+
+
     If FindSkillCapOption(option) >= 0
 
         SetInfoText("Maximum level this skill can actually reach. For example, a Skill Cap of 150 allows the skill to increase up to 150, but not beyond it. Values above 400 are experimental; the hard limit is 500.")
@@ -2200,6 +2591,94 @@ Int Function FindPlayerXpBreakpointMultiplierOption(Int option)
     Return -1
 
 EndFunction
+; ============================================================================
+; Attributes at Level Up helpers
+; ============================================================================
+
+Int Function GetSelectedAttributeTableIndex()
+
+    Return (SELECTED_ATTRIBUTE_TARGET * 3) + SELECTED_ATTRIBUTE_CHOICE
+
+EndFunction
+
+
+Int Function GetAttributeValueForNewBreakpoint(Int tableIndex, Int newLevel)
+
+    Int count = UncapperMCM.GetAttributeBreakpointCount(tableIndex)
+
+    If count <= 0
+        Return 0
+    EndIf
+
+    Int selectedValue = UncapperMCM.GetAttributeBreakpointValue(tableIndex, 0)
+
+    Int i = 1
+
+    While i < count
+
+        Int breakpointLevel = UncapperMCM.GetAttributeBreakpointLevel(tableIndex, i)
+
+        If breakpointLevel > newLevel
+            Return selectedValue
+        EndIf
+
+        selectedValue = UncapperMCM.GetAttributeBreakpointValue(tableIndex, i)
+
+        i += 1
+
+    EndWhile
+
+    Return selectedValue
+
+EndFunction
+
+
+Int Function FindAttributeBreakpointLevelOption(Int option)
+
+    If OPTION_ATTRIBUTE_BREAKPOINT_LEVELS == None
+        Return -1
+    EndIf
+
+    Int i = 0
+
+    While i < ACTIVE_ATTRIBUTE_BREAKPOINT_COUNT
+
+        If OPTION_ATTRIBUTE_BREAKPOINT_LEVELS[i] == option
+            Return i
+        EndIf
+
+        i += 1
+
+    EndWhile
+
+    Return -1
+
+EndFunction
+
+
+Int Function FindAttributeBreakpointValueOption(Int option)
+
+    If OPTION_ATTRIBUTE_BREAKPOINT_VALUES == None
+        Return -1
+    EndIf
+
+    Int i = 0
+
+    While i < ACTIVE_ATTRIBUTE_BREAKPOINT_COUNT
+
+        If OPTION_ATTRIBUTE_BREAKPOINT_VALUES[i] == option
+            Return i
+        EndIf
+
+        i += 1
+
+    EndWhile
+
+    Return -1
+
+EndFunction
+
+
 ; ============================================================================
 ; Perks at Level Up helpers
 ; ============================================================================

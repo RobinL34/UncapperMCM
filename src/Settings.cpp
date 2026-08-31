@@ -13,11 +13,28 @@ namespace
     const std::vector<Settings::MultiplierBreakpoint>
         g_emptyMultiplierBreakpoints;
 
+    const std::vector<Settings::AttributeBreakpoint>
+        g_emptyAttributeBreakpoints;
+
+    bool IsValidAttributeTableIndex(
+        std::size_t tableIndex)
+    {
+        return tableIndex <
+               Settings::ATTRIBUTE_TABLE_COUNT;
+    }
+
     bool IsValidMultiplier(
         std::uint32_t value)
     {
         return value >= Settings::MIN_MULTIPLIER_HUNDREDTHS &&
                value <= Settings::MAX_MULTIPLIER_HUNDREDTHS;
+    }
+
+    bool IsValidAttributeValue(
+        std::uint32_t value)
+    {
+        return value >= Settings::ATTRIBUTE_MIN_VALUE &&
+               value <= Settings::ATTRIBUTE_MAX_VALUE;
     }
 
     bool ValidateSkillExpBreakpoints(
@@ -568,6 +585,60 @@ namespace
         return true;
     }
 
+    bool ValidateAttributeBreakpoints(
+        const std::vector<Settings::AttributeBreakpoint> &breakpoints)
+    {
+        if (
+            breakpoints.empty() ||
+            breakpoints.size() >
+                Settings::MAX_ATTRIBUTE_BREAKPOINTS)
+        {
+            return false;
+        }
+
+        if (breakpoints.front().level != 0)
+        {
+            return false;
+        }
+
+        std::uint32_t previousLevel = 0;
+
+        for (
+            std::size_t i = 0;
+            i < breakpoints.size();
+            ++i)
+        {
+            const auto &breakpoint =
+                breakpoints[i];
+
+            if (
+                breakpoint.level >
+                Settings::MAX_BREAKPOINT_LEVEL)
+            {
+                return false;
+            }
+
+            if (
+                !IsValidAttributeValue(
+                    breakpoint.value))
+            {
+                return false;
+            }
+
+            if (
+                i > 0 &&
+                breakpoint.level <= previousLevel)
+            {
+                return false;
+            }
+
+            previousLevel =
+                breakpoint.level;
+        }
+
+        return true;
+    }
+
     bool ApplyPerksAtLevelUpBreakpointTable(
         const std::vector<Settings::MultiplierBreakpoint> &breakpoints)
     {
@@ -610,6 +681,213 @@ namespace
             CommitPerksAtLevelUpOverride(
                 static_cast<std::uint32_t>(
                     breakpoints.size()));
+    }
+
+    bool LoadAttributeBreakpointTableFromIni(
+        std::size_t tableIndex,
+        std::vector<Settings::AttributeBreakpoint> &output)
+    {
+        if (!IsValidAttributeTableIndex(tableIndex))
+        {
+            return false;
+        }
+
+        const auto table =
+            static_cast<std::uint32_t>(
+                tableIndex);
+
+        const auto count =
+            UncapperAPI::
+                GetIniAttributeBreakpointCount(
+                    table);
+
+        if (
+            count == UINT32_MAX ||
+            count == 0 ||
+            count >
+                Settings::MAX_ATTRIBUTE_BREAKPOINTS)
+        {
+            SKSE::log::error(
+                "Invalid Attribute breakpoint count {} "
+                "for table {}.",
+                count,
+                tableIndex);
+
+            return false;
+        }
+
+        std::vector<Settings::AttributeBreakpoint>
+            breakpoints;
+
+        breakpoints.reserve(count);
+
+        for (
+            std::uint32_t index = 0;
+            index < count;
+            ++index)
+        {
+            const auto level =
+                UncapperAPI::
+                    GetIniAttributeBreakpointLevel(
+                        table,
+                        index);
+
+            const auto value =
+                UncapperAPI::
+                    GetIniAttributeBreakpointValue(
+                        table,
+                        index);
+
+            if (
+                level == UINT32_MAX ||
+                value == UINT32_MAX)
+            {
+                SKSE::log::error(
+                    "Failed to read Attribute breakpoint {} "
+                    "for table {}.",
+                    index,
+                    tableIndex);
+
+                return false;
+            }
+
+            if (
+                !IsValidAttributeValue(
+                    value))
+            {
+                SKSE::log::error(
+                    "Invalid Attribute value {} at breakpoint {} "
+                    "for table {}.",
+                    value,
+                    index,
+                    tableIndex);
+
+                return false;
+            }
+
+            breakpoints.push_back(
+                Settings::AttributeBreakpoint{
+                    level,
+                    value});
+        }
+
+        if (
+            !ValidateAttributeBreakpoints(
+                breakpoints))
+        {
+            SKSE::log::error(
+                "Invalid Attribute breakpoint table {} "
+                "loaded from SkyrimUncapper.ini.",
+                tableIndex);
+
+            return false;
+        }
+
+        output =
+            std::move(breakpoints);
+
+        return true;
+    }
+
+    bool LoadAttributesAtLevelUpFromIni(
+        std::array<
+            std::vector<Settings::AttributeBreakpoint>,
+            Settings::ATTRIBUTE_TABLE_COUNT> &output)
+    {
+        std::array<
+            std::vector<Settings::AttributeBreakpoint>,
+            Settings::ATTRIBUTE_TABLE_COUNT>
+            tables{};
+
+        for (
+            std::size_t tableIndex = 0;
+            tableIndex < Settings::ATTRIBUTE_TABLE_COUNT;
+            ++tableIndex)
+        {
+            if (
+                !LoadAttributeBreakpointTableFromIni(
+                    tableIndex,
+                    tables[tableIndex]))
+            {
+                return false;
+            }
+        }
+
+        output =
+            std::move(tables);
+
+        return true;
+    }
+
+    bool ApplyAttributeBreakpointTable(
+        std::size_t tableIndex,
+        const std::vector<Settings::AttributeBreakpoint> &breakpoints)
+    {
+        if (
+            !IsValidAttributeTableIndex(tableIndex) ||
+            !ValidateAttributeBreakpoints(
+                breakpoints))
+        {
+            return false;
+        }
+
+        const auto table =
+            static_cast<std::uint32_t>(
+                tableIndex);
+
+        if (
+            !UncapperAPI::
+                BeginAttributeOverride(
+                    table))
+        {
+            SKSE::log::error(
+                "Failed to begin Attribute override for table {}.",
+                tableIndex);
+
+            return false;
+        }
+
+        for (
+            std::size_t i = 0;
+            i < breakpoints.size();
+            ++i)
+        {
+            const auto &breakpoint =
+                breakpoints[i];
+
+            if (
+                !UncapperAPI::
+                    SetAttributeBreakpoint(
+                        table,
+                        static_cast<std::uint32_t>(i),
+                        breakpoint.level,
+                        breakpoint.value))
+            {
+                SKSE::log::error(
+                    "Failed to set Attribute breakpoint {} "
+                    "for table {}.",
+                    i,
+                    tableIndex);
+
+                return false;
+            }
+        }
+
+        if (
+            !UncapperAPI::
+                CommitAttributeOverride(
+                    table,
+                    static_cast<std::uint32_t>(
+                        breakpoints.size())))
+        {
+            SKSE::log::error(
+                "Failed to commit Attribute override for table {}.",
+                tableIndex);
+
+            return false;
+        }
+
+        return true;
     }
 
 }
@@ -775,6 +1053,31 @@ namespace Settings
             return false;
         }
 
+        const auto useAttributesAtLevelUp =
+            UncapperAPI::
+                GetIniUseAttributesAtLevelUp();
+
+        if (
+            useAttributesAtLevelUp == UINT32_MAX ||
+            useAttributesAtLevelUp > 1)
+        {
+            SKSE::log::error(
+                "Invalid bUseAttributesAtLevelUp value {}.",
+                useAttributesAtLevelUp);
+
+            return false;
+        }
+
+        if (
+            !LoadAttributesAtLevelUpFromIni(
+                g_settings.attributesAtLevelUp))
+        {
+            return false;
+        }
+
+        g_settings.useAttributesAtLevelUp =
+            useAttributesAtLevelUp != 0;
+
         const auto magnitudeCap =
             UncapperAPI::
                 GetIniEnchantMagnitudeCap();
@@ -813,7 +1116,7 @@ namespace Settings
         SKSE::log::info(
             "Skill caps, formula caps, Enchanting "
             "Skill XP, Player Level XP and PerksAtLevelUp "
-            "settings loaded "
+            "and AttributesAtLevelUp settings loaded "
             "from SkyrimUncapper.ini.");
 
         return true;
@@ -1427,6 +1730,60 @@ namespace Settings
     }
 
     // ---------------------------------------------------------------------
+    // Attributes at level up
+    // ---------------------------------------------------------------------
+
+    bool GetUseAttributesAtLevelUp()
+    {
+        return g_settings
+            .useAttributesAtLevelUp;
+    }
+
+    const std::vector<AttributeBreakpoint> &
+    GetAttributeBreakpoints(
+        std::size_t tableIndex)
+    {
+        if (!IsValidAttributeTableIndex(tableIndex))
+        {
+            return g_emptyAttributeBreakpoints;
+        }
+
+        return g_settings
+            .attributesAtLevelUp[tableIndex];
+    }
+
+    bool SetAttributeBreakpoints(
+        std::size_t tableIndex,
+        const std::vector<AttributeBreakpoint> &breakpoints)
+    {
+        if (
+            !IsValidAttributeTableIndex(tableIndex) ||
+            !ValidateAttributeBreakpoints(
+                breakpoints) ||
+            !g_settings.useAttributesAtLevelUp)
+        {
+            return false;
+        }
+
+        if (g_settings.enabled)
+        {
+            if (
+                !ApplyAttributeBreakpointTable(
+                    tableIndex,
+                    breakpoints))
+            {
+                return false;
+            }
+        }
+
+        g_settings
+            .attributesAtLevelUp[tableIndex] =
+            breakpoints;
+
+        return true;
+    }
+
+    // ---------------------------------------------------------------------
     // Apply
     // ---------------------------------------------------------------------
 
@@ -1462,6 +1819,18 @@ namespace Settings
                 g_settings.perksAtLevelUp))
         {
             return false;
+        }
+
+        for (
+            const auto &breakpoints :
+            g_settings.attributesAtLevelUp)
+        {
+            if (
+                !ValidateAttributeBreakpoints(
+                    breakpoints))
+            {
+                return false;
+            }
         }
 
         for (
@@ -1647,6 +2016,29 @@ namespace Settings
             return false;
         }
 
+        if (g_settings.useAttributesAtLevelUp)
+        {
+            for (
+                std::size_t tableIndex = 0;
+                tableIndex < ATTRIBUTE_TABLE_COUNT;
+                ++tableIndex)
+            {
+                if (
+                    !ApplyAttributeBreakpointTable(
+                        tableIndex,
+                        g_settings
+                            .attributesAtLevelUp[tableIndex]))
+                {
+                    SKSE::log::error(
+                        "Failed to apply Attribute breakpoint "
+                        "table {}.",
+                        tableIndex);
+
+                    return false;
+                }
+            }
+        }
+
         const auto magnitudeCap =
             g_settings
                 .enchanting
@@ -1701,7 +2093,7 @@ namespace Settings
         SKSE::log::info(
             "Skill caps, formula caps, Enchanting, "
             "Skill XP, Player Level XP and PerksAtLevelUp "
-            "settings applied.");
+            "and AttributesAtLevelUp settings applied.");
 
         return true;
     }

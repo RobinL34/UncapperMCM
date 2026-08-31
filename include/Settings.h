@@ -24,6 +24,31 @@ namespace Settings
     constexpr std::size_t MAX_SKILL_EXP_BREAKPOINTS = 32;
     constexpr std::size_t MAX_LEVEL_EXP_BREAKPOINTS = 32;
     constexpr std::size_t MAX_PERKS_AT_LEVEL_UP_BREAKPOINTS = 32;
+    constexpr std::size_t ATTRIBUTE_TABLE_COUNT = 12;
+    constexpr std::size_t MAX_ATTRIBUTE_BREAKPOINTS = 32;
+
+    constexpr std::uint32_t ATTRIBUTE_MIN_VALUE = 0;
+    constexpr std::uint32_t ATTRIBUTE_MAX_VALUE = 100;
+
+
+    enum class AttributeTable : std::uint32_t
+    {
+        HealthAtLevelUp = 0,
+        HealthAtMagickaLevelUp = 1,
+        HealthAtStaminaLevelUp = 2,
+
+        MagickaAtHealthLevelUp = 3,
+        MagickaAtLevelUp = 4,
+        MagickaAtStaminaLevelUp = 5,
+
+        StaminaAtHealthLevelUp = 6,
+        StaminaAtMagickaLevelUp = 7,
+        StaminaAtLevelUp = 8,
+
+        CarryWeightAtHealthLevelUp = 9,
+        CarryWeightAtMagickaLevelUp = 10,
+        CarryWeightAtStaminaLevelUp = 11
+    };
 
 
     // ---------------------------------------------------------------------
@@ -55,10 +80,10 @@ namespace Settings
     };
 
 
-    struct IntBreakpoint
+    struct AttributeBreakpoint
     {
         std::uint32_t level = 0;
-        std::int32_t value = 0;
+        std::uint32_t value = 0;
     };
 
 
@@ -128,21 +153,12 @@ namespace Settings
 
         std::vector<MultiplierBreakpoint> perksAtLevelUp;
 
-        std::vector<IntBreakpoint> healthAtLevelUp;
-        std::vector<IntBreakpoint> healthAtMagickaLevelUp;
-        std::vector<IntBreakpoint> healthAtStaminaLevelUp;
+        std::array<
+            std::vector<AttributeBreakpoint>,
+            ATTRIBUTE_TABLE_COUNT>
+            attributesAtLevelUp{};
 
-        std::vector<IntBreakpoint> magickaAtLevelUp;
-        std::vector<IntBreakpoint> magickaAtHealthLevelUp;
-        std::vector<IntBreakpoint> magickaAtStaminaLevelUp;
-
-        std::vector<IntBreakpoint> staminaAtLevelUp;
-        std::vector<IntBreakpoint> staminaAtHealthLevelUp;
-        std::vector<IntBreakpoint> staminaAtMagickaLevelUp;
-
-        std::vector<IntBreakpoint> carryWeightAtHealthLevelUp;
-        std::vector<IntBreakpoint> carryWeightAtMagickaLevelUp;
-        std::vector<IntBreakpoint> carryWeightAtStaminaLevelUp;
+        bool useAttributesAtLevelUp = false;
 
         LegendarySettings legendary{};
     };
@@ -289,6 +305,23 @@ namespace Settings
 
     bool SetPerksAtLevelUpBreakpoints(
         const std::vector<MultiplierBreakpoint>& breakpoints
+    );
+
+
+    // ---------------------------------------------------------------------
+    // Attributes at level up
+    // ---------------------------------------------------------------------
+
+    bool GetUseAttributesAtLevelUp();
+
+    const std::vector<AttributeBreakpoint>&
+        GetAttributeBreakpoints(
+            std::size_t tableIndex
+        );
+
+    bool SetAttributeBreakpoints(
+        std::size_t tableIndex,
+        const std::vector<AttributeBreakpoint>& breakpoints
     );
 
 

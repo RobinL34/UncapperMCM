@@ -42,6 +42,24 @@ namespace
                             Settings::MAX_BREAKPOINT_LEVEL);
     }
 
+    bool IsValidAttributeTableIndex(
+        std::int32_t tableIndex)
+    {
+        return tableIndex >= 0 &&
+               tableIndex <
+                   static_cast<std::int32_t>(
+                       Settings::ATTRIBUTE_TABLE_COUNT);
+    }
+
+    bool IsValidAttributeValue(
+        std::int32_t value)
+    {
+        return value >= static_cast<std::int32_t>(
+                            Settings::ATTRIBUTE_MIN_VALUE) &&
+               value <= static_cast<std::int32_t>(
+                            Settings::ATTRIBUTE_MAX_VALUE);
+    }
+
     const std::vector<Settings::SkillExpBreakpoint> &
     GetSkillExpBreakpointTable(
         std::size_t skillSlot,
@@ -168,6 +186,44 @@ namespace
 
     bool ContainsDuplicateMultiplierBreakpointLevels(
         const std::vector<Settings::MultiplierBreakpoint> &breakpoints)
+    {
+        if (breakpoints.size() < 2)
+        {
+            return false;
+        }
+
+        for (
+            std::size_t i = 1;
+            i < breakpoints.size();
+            ++i)
+        {
+            if (
+                breakpoints[i - 1].level ==
+                breakpoints[i].level)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    void SortAttributeBreakpoints(
+        std::vector<Settings::AttributeBreakpoint> &breakpoints)
+    {
+        std::sort(
+            breakpoints.begin(),
+            breakpoints.end(),
+            [](
+                const Settings::AttributeBreakpoint &a,
+                const Settings::AttributeBreakpoint &b)
+            {
+                return a.level < b.level;
+            });
+    }
+
+    bool ContainsDuplicateAttributeBreakpointLevels(
+        const std::vector<Settings::AttributeBreakpoint> &breakpoints)
     {
         if (breakpoints.size() < 2)
         {
@@ -1607,6 +1663,336 @@ namespace
     }
 
     // =========================================================================
+    // Attributes at level up - breakpoint getters
+    // =========================================================================
+
+    std::int32_t PapyrusGetAttributeBreakpointCount(
+        RE::StaticFunctionTag *,
+        std::int32_t tableIndex)
+    {
+        if (!IsValidAttributeTableIndex(tableIndex))
+        {
+            return -1;
+        }
+
+        const auto &breakpoints =
+            Settings::
+                GetAttributeBreakpoints(
+                    static_cast<std::size_t>(
+                        tableIndex));
+
+        return static_cast<std::int32_t>(
+            breakpoints.size());
+    }
+
+    std::int32_t PapyrusGetAttributeBreakpointLevel(
+        RE::StaticFunctionTag *,
+        std::int32_t tableIndex,
+        std::int32_t index)
+    {
+        if (
+            !IsValidAttributeTableIndex(tableIndex) ||
+            index < 0)
+        {
+            return -1;
+        }
+
+        const auto &breakpoints =
+            Settings::
+                GetAttributeBreakpoints(
+                    static_cast<std::size_t>(
+                        tableIndex));
+
+        const auto breakpointIndex =
+            static_cast<std::size_t>(
+                index);
+
+        if (
+            breakpointIndex >=
+            breakpoints.size())
+        {
+            return -1;
+        }
+
+        return static_cast<std::int32_t>(
+            breakpoints[breakpointIndex]
+                .level);
+    }
+
+    std::int32_t PapyrusGetAttributeBreakpointValue(
+        RE::StaticFunctionTag *,
+        std::int32_t tableIndex,
+        std::int32_t index)
+    {
+        if (
+            !IsValidAttributeTableIndex(tableIndex) ||
+            index < 0)
+        {
+            return -1;
+        }
+
+        const auto &breakpoints =
+            Settings::
+                GetAttributeBreakpoints(
+                    static_cast<std::size_t>(
+                        tableIndex));
+
+        const auto breakpointIndex =
+            static_cast<std::size_t>(
+                index);
+
+        if (
+            breakpointIndex >=
+            breakpoints.size())
+        {
+            return -1;
+        }
+
+        return static_cast<std::int32_t>(
+            breakpoints[breakpointIndex]
+                .value);
+    }
+
+    // =========================================================================
+    // Attributes at level up - modify breakpoint
+    // =========================================================================
+
+    bool PapyrusSetAttributeBreakpoint(
+        RE::StaticFunctionTag *,
+        std::int32_t tableIndex,
+        std::int32_t index,
+        std::int32_t level,
+        std::int32_t value)
+    {
+        if (
+            !Settings::GetUseAttributesAtLevelUp() ||
+            !IsValidAttributeTableIndex(tableIndex) ||
+            index < 0 ||
+            !IsValidBreakpointLevel(level) ||
+            !IsValidAttributeValue(value))
+        {
+            return false;
+        }
+
+        const auto table =
+            static_cast<std::size_t>(
+                tableIndex);
+
+        auto breakpoints =
+            Settings::
+                GetAttributeBreakpoints(
+                    table);
+
+        const auto breakpointIndex =
+            static_cast<std::size_t>(
+                index);
+
+        if (
+            breakpointIndex >=
+            breakpoints.size())
+        {
+            return false;
+        }
+
+        if (
+            breakpointIndex == 0 &&
+            level != 0)
+        {
+            SKSE::log::warn(
+                "SetAttributeBreakpoint rejected: "
+                "level 0 breakpoint cannot be moved.");
+
+            return false;
+        }
+
+        breakpoints[breakpointIndex] =
+            Settings::AttributeBreakpoint{
+                static_cast<std::uint32_t>(
+                    level),
+                static_cast<std::uint32_t>(
+                    value)};
+
+        SortAttributeBreakpoints(
+            breakpoints);
+
+        if (
+            ContainsDuplicateAttributeBreakpointLevels(
+                breakpoints))
+        {
+            SKSE::log::warn(
+                "SetAttributeBreakpoint rejected "
+                "duplicate level {} for table {}.",
+                level,
+                tableIndex);
+
+            return false;
+        }
+
+        const bool result =
+            Settings::
+                SetAttributeBreakpoints(
+                    table,
+                    breakpoints);
+
+        SKSE::log::info(
+            "Papyrus SetAttributeBreakpoint("
+            "{}, {}, {}, {}) -> {}",
+            tableIndex,
+            index,
+            level,
+            value,
+            result);
+
+        return result;
+    }
+
+    // =========================================================================
+    // Attributes at level up - add breakpoint
+    // =========================================================================
+
+    bool PapyrusAddAttributeBreakpoint(
+        RE::StaticFunctionTag *,
+        std::int32_t tableIndex,
+        std::int32_t level,
+        std::int32_t value)
+    {
+        if (
+            !Settings::GetUseAttributesAtLevelUp() ||
+            !IsValidAttributeTableIndex(tableIndex) ||
+            !IsValidBreakpointLevel(level) ||
+            !IsValidAttributeValue(value))
+        {
+            return false;
+        }
+
+        const auto table =
+            static_cast<std::size_t>(
+                tableIndex);
+
+        auto breakpoints =
+            Settings::
+                GetAttributeBreakpoints(
+                    table);
+
+        if (
+            breakpoints.size() >=
+            Settings::MAX_ATTRIBUTE_BREAKPOINTS)
+        {
+            SKSE::log::warn(
+                "AddAttributeBreakpoint rejected: "
+                "maximum breakpoint count reached for table {}.",
+                tableIndex);
+
+            return false;
+        }
+
+        breakpoints.push_back(
+            Settings::AttributeBreakpoint{
+                static_cast<std::uint32_t>(
+                    level),
+                static_cast<std::uint32_t>(
+                    value)});
+
+        SortAttributeBreakpoints(
+            breakpoints);
+
+        if (
+            ContainsDuplicateAttributeBreakpointLevels(
+                breakpoints))
+        {
+            SKSE::log::warn(
+                "AddAttributeBreakpoint rejected "
+                "duplicate level {} for table {}.",
+                level,
+                tableIndex);
+
+            return false;
+        }
+
+        const bool result =
+            Settings::
+                SetAttributeBreakpoints(
+                    table,
+                    breakpoints);
+
+        SKSE::log::info(
+            "Papyrus AddAttributeBreakpoint("
+            "{}, {}, {}) -> {}",
+            tableIndex,
+            level,
+            value,
+            result);
+
+        return result;
+    }
+
+    // =========================================================================
+    // Attributes at level up - remove breakpoint
+    // =========================================================================
+
+    bool PapyrusRemoveAttributeBreakpoint(
+        RE::StaticFunctionTag *,
+        std::int32_t tableIndex,
+        std::int32_t index)
+    {
+        if (
+            !Settings::GetUseAttributesAtLevelUp() ||
+            !IsValidAttributeTableIndex(tableIndex) ||
+            index <= 0)
+        {
+            return false;
+        }
+
+        const auto table =
+            static_cast<std::size_t>(
+                tableIndex);
+
+        auto breakpoints =
+            Settings::
+                GetAttributeBreakpoints(
+                    table);
+
+        const auto breakpointIndex =
+            static_cast<std::size_t>(
+                index);
+
+        if (
+            breakpointIndex >=
+                breakpoints.size() ||
+            breakpoints.size() <= 1)
+        {
+            return false;
+        }
+
+        breakpoints.erase(
+            breakpoints.begin() +
+            static_cast<std::ptrdiff_t>(
+                breakpointIndex));
+
+        const bool result =
+            Settings::
+                SetAttributeBreakpoints(
+                    table,
+                    breakpoints);
+
+        SKSE::log::info(
+            "Papyrus RemoveAttributeBreakpoint("
+            "{}, {}) -> {}",
+            tableIndex,
+            index,
+            result);
+
+        return result;
+    }
+
+    bool PapyrusGetIniUseAttributesAtLevelUp(
+        RE::StaticFunctionTag *)
+    {
+        return Settings::
+            GetUseAttributesAtLevelUp();
+    }
+
+    // =========================================================================
     // General
     // =========================================================================
 
@@ -1842,6 +2228,45 @@ bool RegisterPapyrus(
         "RemovePerksAtLevelUpBreakpoint",
         PAPYRUS_CLASS,
         PapyrusRemovePerksAtLevelUpBreakpoint);
+
+    // -------------------------------------------------------------------------
+    // Attributes at level up
+    // -------------------------------------------------------------------------
+
+    vm->RegisterFunction(
+        "GetAttributeBreakpointCount",
+        PAPYRUS_CLASS,
+        PapyrusGetAttributeBreakpointCount);
+
+    vm->RegisterFunction(
+        "GetAttributeBreakpointLevel",
+        PAPYRUS_CLASS,
+        PapyrusGetAttributeBreakpointLevel);
+
+    vm->RegisterFunction(
+        "GetAttributeBreakpointValue",
+        PAPYRUS_CLASS,
+        PapyrusGetAttributeBreakpointValue);
+
+    vm->RegisterFunction(
+        "SetAttributeBreakpoint",
+        PAPYRUS_CLASS,
+        PapyrusSetAttributeBreakpoint);
+
+    vm->RegisterFunction(
+        "AddAttributeBreakpoint",
+        PAPYRUS_CLASS,
+        PapyrusAddAttributeBreakpoint);
+
+    vm->RegisterFunction(
+        "RemoveAttributeBreakpoint",
+        PAPYRUS_CLASS,
+        PapyrusRemoveAttributeBreakpoint);
+
+    vm->RegisterFunction(
+        "GetIniUseAttributesAtLevelUp",
+        PAPYRUS_CLASS,
+        PapyrusGetIniUseAttributesAtLevelUp);
 
     // -------------------------------------------------------------------------
     // General

@@ -147,6 +147,38 @@ namespace
         bool(__stdcall *)(
             std::uint32_t count);
 
+    // ---------------------------------------------------------------------
+    // Attributes at level up function types
+    // ---------------------------------------------------------------------
+
+    using GetIniAttributeBreakpointCountFn =
+        std::uint32_t(__stdcall *)(
+            std::uint32_t tableIndex);
+
+    using GetIniAttributeBreakpointValueFn =
+        std::uint32_t(__stdcall *)(
+            std::uint32_t tableIndex,
+            std::uint32_t index);
+
+    using BeginAttributeOverrideFn =
+        bool(__stdcall *)(
+            std::uint32_t tableIndex);
+
+    using SetAttributeBreakpointFn =
+        bool(__stdcall *)(
+            std::uint32_t tableIndex,
+            std::uint32_t index,
+            std::uint32_t level,
+            std::uint32_t value);
+
+    using CommitAttributeOverrideFn =
+        bool(__stdcall *)(
+            std::uint32_t tableIndex,
+            std::uint32_t count);
+
+    using GetIniUseAttributesAtLevelUpFn =
+        std::uint32_t(__stdcall *)();
+
     HMODULE GetUncapperModule()
     {
         return ::GetModuleHandleA(
@@ -1140,5 +1172,150 @@ namespace UncapperAPI
         }
 
         return fn(count);
+    }
+
+    // ---------------------------------------------------------------------
+    // Attributes at level up
+    // ---------------------------------------------------------------------
+
+    std::uint32_t GetIniAttributeBreakpointCount(
+        std::uint32_t tableIndex)
+    {
+        const auto getter =
+            GetUncapperFunction<GetIniAttributeBreakpointCountFn>(
+                "Uncapper_GetIniAttributeBreakpointCount");
+
+        if (!getter)
+        {
+            SKSE::log::error(
+                "Uncapper_GetIniAttributeBreakpointCount was not found.");
+
+            return UINT32_MAX;
+        }
+
+        return getter(tableIndex);
+    }
+
+    std::uint32_t GetIniAttributeBreakpointLevel(
+        std::uint32_t tableIndex,
+        std::uint32_t index)
+    {
+        const auto getter =
+            GetUncapperFunction<GetIniAttributeBreakpointValueFn>(
+                "Uncapper_GetIniAttributeBreakpointLevel");
+
+        if (!getter)
+        {
+            SKSE::log::error(
+                "Uncapper_GetIniAttributeBreakpointLevel was not found.");
+
+            return UINT32_MAX;
+        }
+
+        return getter(
+            tableIndex,
+            index);
+    }
+
+    std::uint32_t GetIniAttributeBreakpointValue(
+        std::uint32_t tableIndex,
+        std::uint32_t index)
+    {
+        const auto getter =
+            GetUncapperFunction<GetIniAttributeBreakpointValueFn>(
+                "Uncapper_GetIniAttributeBreakpointValue");
+
+        if (!getter)
+        {
+            SKSE::log::error(
+                "Uncapper_GetIniAttributeBreakpointValue was not found.");
+
+            return UINT32_MAX;
+        }
+
+        return getter(
+            tableIndex,
+            index);
+    }
+
+    bool BeginAttributeOverride(
+        std::uint32_t tableIndex)
+    {
+        const auto fn =
+            GetUncapperFunction<BeginAttributeOverrideFn>(
+                "Uncapper_BeginAttributeOverride");
+
+        if (!fn)
+        {
+            SKSE::log::error(
+                "Uncapper_BeginAttributeOverride was not found.");
+
+            return false;
+        }
+
+        return fn(tableIndex);
+    }
+
+    bool SetAttributeBreakpoint(
+        std::uint32_t tableIndex,
+        std::uint32_t index,
+        std::uint32_t level,
+        std::uint32_t value)
+    {
+        const auto fn =
+            GetUncapperFunction<SetAttributeBreakpointFn>(
+                "Uncapper_SetAttributeBreakpoint");
+
+        if (!fn)
+        {
+            SKSE::log::error(
+                "Uncapper_SetAttributeBreakpoint was not found.");
+
+            return false;
+        }
+
+        return fn(
+            tableIndex,
+            index,
+            level,
+            value);
+    }
+
+    bool CommitAttributeOverride(
+        std::uint32_t tableIndex,
+        std::uint32_t count)
+    {
+        const auto fn =
+            GetUncapperFunction<CommitAttributeOverrideFn>(
+                "Uncapper_CommitAttributeOverride");
+
+        if (!fn)
+        {
+            SKSE::log::error(
+                "Uncapper_CommitAttributeOverride was not found.");
+
+            return false;
+        }
+
+        return fn(
+            tableIndex,
+            count);
+    }
+
+    std::uint32_t GetIniUseAttributesAtLevelUp()
+    {
+        const auto getter =
+            GetUncapperFunction<GetIniUseAttributesAtLevelUpFn>(
+                "Uncapper_GetIniUseAttributesAtLevelUp");
+
+        if (!getter)
+        {
+            SKSE::log::error(
+                "Uncapper_GetIniUseAttributesAtLevelUp was not found.");
+
+            return UINT32_MAX;
+        }
+
+        return getter();
     }
 }

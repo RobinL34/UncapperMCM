@@ -255,4 +255,41 @@ namespace UncapperAPI
     bool CommitPerksAtLevelUpOverride(
         std::uint32_t count
     );
+
+
+    // ---------------------------------------------------------------------
+    // Attributes at level up
+    // ---------------------------------------------------------------------
+
+    std::uint32_t GetIniAttributeBreakpointCount(
+        std::uint32_t tableIndex
+    );
+
+    std::uint32_t GetIniAttributeBreakpointLevel(
+        std::uint32_t tableIndex,
+        std::uint32_t index
+    );
+
+    std::uint32_t GetIniAttributeBreakpointValue(
+        std::uint32_t tableIndex,
+        std::uint32_t index
+    );
+
+    bool BeginAttributeOverride(
+        std::uint32_t tableIndex
+    );
+
+    bool SetAttributeBreakpoint(
+        std::uint32_t tableIndex,
+        std::uint32_t index,
+        std::uint32_t level,
+        std::uint32_t value
+    );
+
+    bool CommitAttributeOverride(
+        std::uint32_t tableIndex,
+        std::uint32_t count
+    );
+
+    std::uint32_t GetIniUseAttributesAtLevelUp();
 }
