@@ -2937,7 +2937,14 @@ namespace
         //
         // This lets older save versions inherit settings that did not
         // exist when those saves were created.
-        Settings::Reset();
+        if (!Settings::Reset())
+        {
+            SKSE::log::error(
+                "Aborting UncapperMCM save load because the current "
+                "INI baseline could not be reset safely.");
+
+            return;
+        }
 
         std::uint32_t type = 0;
         std::uint32_t version = 0;
@@ -3070,7 +3077,13 @@ namespace
     void RevertCallback(
         SKSE::SerializationInterface *)
     {
-        Settings::Reset();
+        if (!Settings::Reset())
+        {
+            SKSE::log::error(
+                "Failed to reset UncapperMCM settings during revert.");
+
+            return;
+        }
 
         SKSE::log::info(
             "UncapperMCM settings reverted.");

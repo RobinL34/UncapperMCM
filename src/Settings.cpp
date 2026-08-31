@@ -1246,11 +1246,17 @@ namespace Settings
         return true;
     }
 
-    void Reset()
+    bool Reset()
     {
         g_settings = Data{};
 
-        UncapperAPI::ClearOverrides();
+        if (!UncapperAPI::ClearOverrides())
+        {
+            SKSE::log::error(
+                "Settings reset failed to clear runtime overrides.");
+
+            return false;
+        }
 
         if (!LoadFromIni())
         {
@@ -1258,7 +1264,7 @@ namespace Settings
                 "Settings reset failed "
                 "to reload INI values.");
 
-            return;
+            return false;
         }
 
         g_settings.enabled = false;
@@ -1266,6 +1272,8 @@ namespace Settings
         SKSE::log::info(
             "Settings reset to "
             "SkyrimUncapper.ini values.");
+
+        return true;
     }
 
     bool IsEnabled()
@@ -1273,9 +1281,12 @@ namespace Settings
         return g_settings.enabled;
     }
 
-    void SetEnabled(
+    bool SetEnabled(
         bool enabled)
     {
+        const bool oldEnabled =
+            g_settings.enabled;
+
         g_settings.enabled =
             enabled;
 
@@ -1283,7 +1294,56 @@ namespace Settings
             "Enabled -> {}",
             enabled);
 
-        Apply();
+        if (Apply())
+        {
+            return true;
+        }
+
+        SKSE::log::error(
+            "Failed to change Enabled from {} to {}.",
+            oldEnabled,
+            enabled);
+
+        g_settings.enabled =
+            oldEnabled;
+
+        if (!oldEnabled && enabled)
+        {
+            SKSE::log::warn(
+                "Attempting recovery from a failed MCM activation "
+                "by clearing partially applied runtime overrides.");
+
+            g_settings.enabled = false;
+
+            if (!Apply())
+            {
+                SKSE::log::error(
+                    "Recovery after failed MCM activation also failed. "
+                    "Runtime override state may be partial.");
+            }
+            else
+            {
+                SKSE::log::info(
+                    "Recovery after failed MCM activation succeeded. "
+                    "SkyrimUncapper.ini is back in control.");
+            }
+        }
+        else if (oldEnabled && !enabled)
+        {
+            SKSE::log::error(
+                "MCM deactivation failed before runtime overrides could "
+                "be cleared. The previous runtime state is presumed "
+                "unchanged but could not be independently verified.");
+        }
+        else
+        {
+            SKSE::log::error(
+                "No safe additional runtime recovery was attempted; "
+                "the logical Enabled value was restored to {}.",
+                oldEnabled);
+        }
+
+        return false;
     }
 
     // ---------------------------------------------------------------------

@@ -151,7 +151,7 @@ String CURRENT_PAGE = ""
 
 Int Function GetVersion()
 
-    Return 11
+    Return 12
 
 EndFunction
 
@@ -277,7 +277,7 @@ EndEvent
 
 Event OnVersionUpdate(Int newVersion)
 
-    If newVersion >= 11
+    If newVersion >= 12
 
         ModName = "Uncapper MCM"
 
@@ -895,9 +895,15 @@ Event OnOptionSelect(Int option)
     If option == OPTION_ENABLED
 
         Bool newValue = !UncapperMCM.GetEnabled()
-        UncapperMCM.SetEnabled(newValue)
-        SetToggleOptionValue(OPTION_ENABLED, newValue)
-        ForcePageReset()
+
+        If UncapperMCM.SetEnabled(newValue)
+            SetToggleOptionValue(OPTION_ENABLED, newValue)
+            ForcePageReset()
+        Else
+            ShowMessage("Unable to change the Uncapper MCM state. Check the SKSE log for details.", false)
+            ForcePageReset()
+        EndIf
+
         Return
 
     EndIf
@@ -907,11 +913,17 @@ Event OnOptionSelect(Int option)
         Bool confirmed = ShowMessage("Reset all Uncapper MCM settings to the values currently loaded from SkyrimUncapper.ini?", true)
 
         If confirmed
-            UncapperMCM.ClearOverrides()
-            XP_ALL_SKILLS = false
-            PLAYER_XP_ALL_SKILLS = false
-            ShowMessage("Settings restored from SkyrimUncapper.ini. Runtime overrides are now disabled.", false)
-            ForcePageReset()
+
+            If UncapperMCM.ClearOverrides()
+                XP_ALL_SKILLS = false
+                PLAYER_XP_ALL_SKILLS = false
+                ShowMessage("Settings restored from SkyrimUncapper.ini. Runtime overrides are now disabled.", false)
+                ForcePageReset()
+            Else
+                ShowMessage("Unable to fully reset Uncapper MCM. Check the SKSE log for details.", false)
+                ForcePageReset()
+            EndIf
+
         EndIf
 
         Return

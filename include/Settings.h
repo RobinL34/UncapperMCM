@@ -173,11 +173,11 @@ namespace Settings
 
     Data& Get();
 
-    void Reset();
+    bool Reset();
     bool LoadFromIni();
 
     bool IsEnabled();
-    void SetEnabled(bool enabled);
+    bool SetEnabled(bool enabled);
 
 
     // ---------------------------------------------------------------------

@@ -1,7 +1,7 @@
 ScriptName UncapperMCM
 
 Bool Function GetEnabled() Global Native
-Function SetEnabled(Bool enabled) Global Native
+Bool Function SetEnabled(Bool enabled) Global Native
 
 Int Function GetSkillCap(Int skillSlot) Global Native
 Bool Function SetSkillCap(Int skillSlot, Int value) Global Native

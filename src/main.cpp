@@ -2093,9 +2093,8 @@ namespace
     bool PapyrusClearOverrides(
         RE::StaticFunctionTag *)
     {
-        Settings::Reset();
-
-        const bool result = true;
+        const bool result =
+            Settings::Reset();
 
         SKSE::log::info(
             "Papyrus ClearOverrides -> {}",
@@ -2110,16 +2109,20 @@ namespace
         return Settings::IsEnabled();
     }
 
-    void PapyrusSetEnabled(
+    bool PapyrusSetEnabled(
         RE::StaticFunctionTag *,
         bool enabled)
     {
-        Settings::SetEnabled(
-            enabled);
+        const bool result =
+            Settings::SetEnabled(
+                enabled);
 
         SKSE::log::info(
-            "Papyrus SetEnabled({})",
-            enabled);
+            "Papyrus SetEnabled({}) -> {}",
+            enabled,
+            result);
+
+        return result;
     }
 }
 
