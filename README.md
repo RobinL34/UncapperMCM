@@ -4,7 +4,7 @@ SkyUI MCM for **Skyrim Skill Uncapper SE/AE** with per-save runtime overrides.
 
 UncapperMCM provides an in-game configuration interface for supported Skyrim Skill Uncapper settings without rewriting the global `SkyrimUncapper.ini`.
 
-Settings are stored per save through SKSE serialization and applied at runtime through the companion SkyrimUncapper MCM Runtime.
+Settings are stored per save through SKSE serialization and applied at runtime through the companion **SkyrimUncapper MCM Runtime**.
 
 ## Features
 
@@ -104,13 +104,13 @@ The original Skyrim Skill Uncapper compatibility limitations for Legendary funct
 - Skyrim Special Edition / Anniversary Edition
 - SKSE
 - SkyUI
-- Skyrim Skill Uncapper MCM Runtime
+- SkyrimUncapper MCM Runtime
 
 Development and testing currently target:
 
 **Skyrim AE 1.6.1170**
 
-The original Skyrim Skill Uncapper installation or its required configuration files must also be present unless the companion runtime package is distributed as a complete replacement.
+Other Skyrim versions have not currently been validated.
 
 ## Compatibility
 
@@ -119,8 +119,6 @@ UncapperMCM is designed specifically for the matching version of:
 **SkyrimUncapper MCM Runtime**
 
 Using an incompatible or unmodified `SkyrimUncapper.dll` will prevent some or all runtime functionality from working.
-
-The plugin assumes runtime configuration mutations are serialized through its normal SKSE/Papyrus execution path. It does not expose the runtime API as a general multi-writer interface.
 
 ## Credits
 
