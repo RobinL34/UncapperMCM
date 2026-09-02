@@ -128,7 +128,7 @@ UncapperMCM is built to extend **Skyrim Skill Uncapper SE/AE**.
 
 Original Rust implementation:
 
-- Andrew Spaulding / TheDreadedAndy
+- Andrew Spaulding (Kasplat / TheDreadedAndy)
 
 Previous Skyrim Uncapper implementations:
 
