@@ -152,3 +152,29 @@ bool PapyrusRemovePlayerLevelExpBreakpoint(
     std::int32_t skillSlot,
     bool characterLevel,
     std::int32_t index);
+
+std::int32_t PapyrusGetPerksAtLevelUpBreakpointCount(
+    RE::StaticFunctionTag *);
+
+std::int32_t PapyrusGetPerksAtLevelUpBreakpointLevel(
+    RE::StaticFunctionTag *,
+    std::int32_t index);
+
+std::int32_t PapyrusGetPerksAtLevelUpBreakpointValue(
+    RE::StaticFunctionTag *,
+    std::int32_t index);
+
+bool PapyrusSetPerksAtLevelUpBreakpoint(
+    RE::StaticFunctionTag *,
+    std::int32_t index,
+    std::int32_t level,
+    std::int32_t valueHundredths);
+
+bool PapyrusAddPerksAtLevelUpBreakpoint(
+    RE::StaticFunctionTag *,
+    std::int32_t level,
+    std::int32_t valueHundredths);
+
+bool PapyrusRemovePerksAtLevelUpBreakpoint(
+    RE::StaticFunctionTag *,
+    std::int32_t index);
