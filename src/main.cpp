@@ -2,6 +2,8 @@
 #include "UncapperAPI.h"
 #include "Settings.h"
 #include "Serialization.h"
+#include "Papyrus/Bindings.h"
+#include "Papyrus/Common.h"
 
 #include <algorithm>
 #include <spdlog/sinks/basic_file_sink.h>
@@ -14,15 +16,6 @@ namespace
     // =========================================================================
     // Helpers
     // =========================================================================
-
-    bool IsValidSkillSlot(
-        std::int32_t skillSlot)
-    {
-        return skillSlot >= 0 &&
-               skillSlot <
-                   static_cast<std::int32_t>(
-                       Settings::SKILL_COUNT);
-    }
 
     bool IsValidMultiplier(
         std::int32_t value)
@@ -289,118 +282,6 @@ namespace
     }
 
     // =========================================================================
-    // Skill Caps
-    // =========================================================================
-
-    bool PapyrusSetSkillCap(
-        RE::StaticFunctionTag *,
-        std::int32_t skillSlot,
-        std::int32_t value)
-    {
-        if (!IsValidSkillSlot(skillSlot))
-        {
-            SKSE::log::warn(
-                "SetSkillCap: invalid skill slot {}",
-                skillSlot);
-
-            return false;
-        }
-
-        if (value < 1)
-        {
-            SKSE::log::warn(
-                "SetSkillCap: invalid value {}",
-                value);
-
-            return false;
-        }
-
-        const bool result =
-            Settings::SetSkillCap(
-                static_cast<std::size_t>(
-                    skillSlot),
-                static_cast<std::uint32_t>(
-                    value));
-
-        SKSE::log::info(
-            "Papyrus SetSkillCap({}, {}) -> {}",
-            skillSlot,
-            value,
-            result);
-
-        return result;
-    }
-
-    bool PapyrusSetFormulaCap(
-        RE::StaticFunctionTag *,
-        std::int32_t skillSlot,
-        std::int32_t value)
-    {
-        if (!IsValidSkillSlot(skillSlot))
-        {
-            SKSE::log::warn(
-                "SetFormulaCap: invalid skill slot {}",
-                skillSlot);
-
-            return false;
-        }
-
-        if (value < 1)
-        {
-            SKSE::log::warn(
-                "SetFormulaCap: invalid value {}",
-                value);
-
-            return false;
-        }
-
-        const bool result =
-            Settings::SetFormulaCap(
-                static_cast<std::size_t>(
-                    skillSlot),
-                static_cast<std::uint32_t>(
-                    value));
-
-        SKSE::log::info(
-            "Papyrus SetFormulaCap({}, {}) -> {}",
-            skillSlot,
-            value,
-            result);
-
-        return result;
-    }
-
-    std::int32_t PapyrusGetSkillCap(
-        RE::StaticFunctionTag *,
-        std::int32_t skillSlot)
-    {
-        if (!IsValidSkillSlot(skillSlot))
-        {
-            return -1;
-        }
-
-        return static_cast<std::int32_t>(
-            Settings::GetSkillCap(
-                static_cast<std::size_t>(
-                    skillSlot)));
-    }
-
-    std::int32_t PapyrusGetFormulaCap(
-        RE::StaticFunctionTag *,
-        std::int32_t skillSlot)
-    {
-        if (!IsValidSkillSlot(skillSlot))
-        {
-            return -1;
-        }
-
-        return static_cast<std::int32_t>(
-            Settings::GetFormulaCap(
-                static_cast<std::size_t>(
-                    skillSlot)));
-    }
-
-    // =========================================================================
     // Enchanting
     // =========================================================================
 
@@ -499,7 +380,7 @@ namespace
         RE::StaticFunctionTag *,
         std::int32_t skillSlot)
     {
-        if (!IsValidSkillSlot(skillSlot))
+        if (!Papyrus::IsValidSkillSlot(skillSlot))
         {
             return -1;
         }
@@ -515,7 +396,7 @@ namespace
         RE::StaticFunctionTag *,
         std::int32_t skillSlot)
     {
-        if (!IsValidSkillSlot(skillSlot))
+        if (!Papyrus::IsValidSkillSlot(skillSlot))
         {
             return -1;
         }
@@ -533,7 +414,7 @@ namespace
         std::int32_t baseHundredths,
         std::int32_t offsetHundredths)
     {
-        if (!IsValidSkillSlot(skillSlot))
+        if (!Papyrus::IsValidSkillSlot(skillSlot))
         {
             SKSE::log::warn(
                 "SetSkillExpBaseMultipliers: "
@@ -593,7 +474,7 @@ namespace
         std::int32_t skillSlot,
         bool characterLevel)
     {
-        if (!IsValidSkillSlot(skillSlot))
+        if (!Papyrus::IsValidSkillSlot(skillSlot))
         {
             return -1;
         }
@@ -615,7 +496,7 @@ namespace
         std::int32_t index)
     {
         if (
-            !IsValidSkillSlot(skillSlot) ||
+            !Papyrus::IsValidSkillSlot(skillSlot) ||
             index < 0)
         {
             return -1;
@@ -650,7 +531,7 @@ namespace
         std::int32_t index)
     {
         if (
-            !IsValidSkillSlot(skillSlot) ||
+            !Papyrus::IsValidSkillSlot(skillSlot) ||
             index < 0)
         {
             return -1;
@@ -685,7 +566,7 @@ namespace
         std::int32_t index)
     {
         if (
-            !IsValidSkillSlot(skillSlot) ||
+            !Papyrus::IsValidSkillSlot(skillSlot) ||
             index < 0)
         {
             return -1;
@@ -727,7 +608,7 @@ namespace
         std::int32_t offsetHundredths)
     {
         if (
-            !IsValidSkillSlot(skillSlot) ||
+            !Papyrus::IsValidSkillSlot(skillSlot) ||
             index < 0 ||
             !IsValidBreakpointLevel(level) ||
             !IsValidMultiplier(
@@ -826,7 +707,7 @@ namespace
         std::int32_t offsetHundredths)
     {
         if (
-            !IsValidSkillSlot(skillSlot) ||
+            !Papyrus::IsValidSkillSlot(skillSlot) ||
             !IsValidBreakpointLevel(level) ||
             !IsValidMultiplier(
                 baseHundredths) ||
@@ -911,7 +792,7 @@ namespace
         std::int32_t index)
     {
         if (
-            !IsValidSkillSlot(skillSlot) ||
+            !Papyrus::IsValidSkillSlot(skillSlot) ||
             index < 0)
         {
             return false;
@@ -989,7 +870,7 @@ namespace
         RE::StaticFunctionTag *,
         std::int32_t skillSlot)
     {
-        if (!IsValidSkillSlot(skillSlot))
+        if (!Papyrus::IsValidSkillSlot(skillSlot))
         {
             return -1;
         }
@@ -1007,7 +888,7 @@ namespace
         std::int32_t multiplierHundredths)
     {
         if (
-            !IsValidSkillSlot(skillSlot) ||
+            !Papyrus::IsValidSkillSlot(skillSlot) ||
             !IsValidMultiplier(
                 multiplierHundredths))
         {
@@ -1040,7 +921,7 @@ namespace
         std::int32_t skillSlot,
         bool characterLevel)
     {
-        if (!IsValidSkillSlot(skillSlot))
+        if (!Papyrus::IsValidSkillSlot(skillSlot))
         {
             return -1;
         }
@@ -1062,7 +943,7 @@ namespace
         std::int32_t index)
     {
         if (
-            !IsValidSkillSlot(skillSlot) ||
+            !Papyrus::IsValidSkillSlot(skillSlot) ||
             index < 0)
         {
             return -1;
@@ -1097,7 +978,7 @@ namespace
         std::int32_t index)
     {
         if (
-            !IsValidSkillSlot(skillSlot) ||
+            !Papyrus::IsValidSkillSlot(skillSlot) ||
             index < 0)
         {
             return -1;
@@ -1138,7 +1019,7 @@ namespace
         std::int32_t multiplierHundredths)
     {
         if (
-            !IsValidSkillSlot(skillSlot) ||
+            !Papyrus::IsValidSkillSlot(skillSlot) ||
             index < 0 ||
             !IsValidBreakpointLevel(level) ||
             !IsValidMultiplier(
@@ -1231,7 +1112,7 @@ namespace
         std::int32_t multiplierHundredths)
     {
         if (
-            !IsValidSkillSlot(skillSlot) ||
+            !Papyrus::IsValidSkillSlot(skillSlot) ||
             !IsValidBreakpointLevel(level) ||
             !IsValidMultiplier(
                 multiplierHundredths))
@@ -1311,7 +1192,7 @@ namespace
         std::int32_t index)
     {
         if (
-            !IsValidSkillSlot(skillSlot) ||
+            !Papyrus::IsValidSkillSlot(skillSlot) ||
             index < 0)
         {
             return false;

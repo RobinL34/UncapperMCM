@@ -12,6 +12,8 @@ add_commonlibsse_plugin(
     ${PROJECT_NAME}
     SOURCES
         src/main.cpp
+        src/Papyrus/Caps.cpp
+        src/Papyrus/Common.cpp
         src/UncapperAPI.cpp
         src/Settings.cpp
         src/Serialization.cpp
