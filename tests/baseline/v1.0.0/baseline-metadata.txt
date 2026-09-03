@@ -1,0 +1,4 @@
+tag=v1.0.0
+tag_commit=95f4d22fd2363df742945e29521f637b5d20b331
+baseline_dll_sha256=ac4f250a0713c46895afeabd072c2d9ef7c715ab32449c06d474e6b985a106c2
+note=The caller is responsible for supplying a DLL built from the baseline tag with the approved Release toolchain.

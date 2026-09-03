@@ -1,0 +1,3 @@
+SKSEPlugin_Load
+SKSEPlugin_Query
+SKSEPlugin_Version
