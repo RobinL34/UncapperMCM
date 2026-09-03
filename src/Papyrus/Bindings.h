@@ -45,3 +45,63 @@ std::int32_t PapyrusGetEnchantChargeCap(
 
 bool PapyrusGetEnchantUseLinearCharge(
     RE::StaticFunctionTag *);
+
+std::int32_t PapyrusGetSkillExpBaseMultiplier(
+    RE::StaticFunctionTag *,
+    std::int32_t skillSlot);
+
+std::int32_t PapyrusGetSkillExpOffsetMultiplier(
+    RE::StaticFunctionTag *,
+    std::int32_t skillSlot);
+
+bool PapyrusSetSkillExpBaseMultipliers(
+    RE::StaticFunctionTag *,
+    std::int32_t skillSlot,
+    std::int32_t baseHundredths,
+    std::int32_t offsetHundredths);
+
+std::int32_t PapyrusGetSkillExpBreakpointCount(
+    RE::StaticFunctionTag *,
+    std::int32_t skillSlot,
+    bool characterLevel);
+
+std::int32_t PapyrusGetSkillExpBreakpointLevel(
+    RE::StaticFunctionTag *,
+    std::int32_t skillSlot,
+    bool characterLevel,
+    std::int32_t index);
+
+std::int32_t PapyrusGetSkillExpBreakpointBaseMultiplier(
+    RE::StaticFunctionTag *,
+    std::int32_t skillSlot,
+    bool characterLevel,
+    std::int32_t index);
+
+std::int32_t PapyrusGetSkillExpBreakpointOffsetMultiplier(
+    RE::StaticFunctionTag *,
+    std::int32_t skillSlot,
+    bool characterLevel,
+    std::int32_t index);
+
+bool PapyrusSetSkillExpBreakpoint(
+    RE::StaticFunctionTag *,
+    std::int32_t skillSlot,
+    bool characterLevel,
+    std::int32_t index,
+    std::int32_t level,
+    std::int32_t baseHundredths,
+    std::int32_t offsetHundredths);
+
+bool PapyrusAddSkillExpBreakpoint(
+    RE::StaticFunctionTag *,
+    std::int32_t skillSlot,
+    bool characterLevel,
+    std::int32_t level,
+    std::int32_t baseHundredths,
+    std::int32_t offsetHundredths);
+
+bool PapyrusRemoveSkillExpBreakpoint(
+    RE::StaticFunctionTag *,
+    std::int32_t skillSlot,
+    bool characterLevel,
+    std::int32_t index);
