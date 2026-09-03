@@ -14,6 +14,7 @@ add_commonlibsse_plugin(
         src/main.cpp
         src/Papyrus/Caps.cpp
         src/Papyrus/Common.cpp
+        src/Papyrus/Enchanting.cpp
         src/UncapperAPI.cpp
         src/Settings.cpp
         src/Serialization.cpp
