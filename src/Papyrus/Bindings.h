@@ -105,3 +105,50 @@ bool PapyrusRemoveSkillExpBreakpoint(
     std::int32_t skillSlot,
     bool characterLevel,
     std::int32_t index);
+
+std::int32_t PapyrusGetPlayerLevelExpMultiplier(
+    RE::StaticFunctionTag *,
+    std::int32_t skillSlot);
+
+bool PapyrusSetPlayerLevelExpMultiplier(
+    RE::StaticFunctionTag *,
+    std::int32_t skillSlot,
+    std::int32_t multiplierHundredths);
+
+std::int32_t PapyrusGetPlayerLevelExpBreakpointCount(
+    RE::StaticFunctionTag *,
+    std::int32_t skillSlot,
+    bool characterLevel);
+
+std::int32_t PapyrusGetPlayerLevelExpBreakpointLevel(
+    RE::StaticFunctionTag *,
+    std::int32_t skillSlot,
+    bool characterLevel,
+    std::int32_t index);
+
+std::int32_t PapyrusGetPlayerLevelExpBreakpointMultiplier(
+    RE::StaticFunctionTag *,
+    std::int32_t skillSlot,
+    bool characterLevel,
+    std::int32_t index);
+
+bool PapyrusSetPlayerLevelExpBreakpoint(
+    RE::StaticFunctionTag *,
+    std::int32_t skillSlot,
+    bool characterLevel,
+    std::int32_t index,
+    std::int32_t level,
+    std::int32_t multiplierHundredths);
+
+bool PapyrusAddPlayerLevelExpBreakpoint(
+    RE::StaticFunctionTag *,
+    std::int32_t skillSlot,
+    bool characterLevel,
+    std::int32_t level,
+    std::int32_t multiplierHundredths);
+
+bool PapyrusRemovePlayerLevelExpBreakpoint(
+    RE::StaticFunctionTag *,
+    std::int32_t skillSlot,
+    bool characterLevel,
+    std::int32_t index);
