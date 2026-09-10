@@ -38,6 +38,8 @@ vcpkg_installed/
 # Temporary / backup files
 *.tmp
 *.temp
+tools/validation/tmp/
+tools/validation/out/
 *.bak
 *.swp
 *.log

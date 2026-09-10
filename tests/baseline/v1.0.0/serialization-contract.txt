@@ -1,0 +1,6 @@
+serialization_id=UCMC
+record_type=SETT
+current_version=7
+declared_versions=1,2,3,4,5,6,7
+migration_loaders=1,2,3,4,5,6,7
+load_dispatch_versions=1,2,3,4,5,6,7

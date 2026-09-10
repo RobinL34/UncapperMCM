@@ -1,0 +1,3 @@
+plugin_name=UncapperMCM
+dll_name=UncapperMCM.dll
+cmake_project_version=0.1.0
