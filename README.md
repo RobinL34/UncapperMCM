@@ -109,6 +109,7 @@ The original Skyrim Skill Uncapper compatibility limitations for Legendary funct
 Development and testing currently target:
 
 **Skyrim AE 1.6.1170**
+**Skyrim SE 1.5.97**
 
 Other Skyrim versions have not currently been validated.
 
